@@ -1,0 +1,38 @@
+.Board {
+  height: 80vh;
+  width: 80vh;
+
+  max-height: 80vw;
+  max-width: 80vw;
+
+  display: flex;
+  flex-direction: column-reverse;
+
+  margin: 10vh auto;
+  
+  .rank {
+    display: flex;
+
+    .square {
+      flex-grow: 1;
+      background-color: #c2d280;
+
+      &.selected {
+        background-color: #697140;
+      }
+      
+      svg {
+        float: left;
+      }
+    }
+
+    &:nth-child(even) .square:nth-child(even),
+    &:nth-child(odd) .square:nth-child(odd) {
+      background-color: #319013;
+
+      &.selected {
+        background-color: #184809;
+      }
+    }
+  }
+}
