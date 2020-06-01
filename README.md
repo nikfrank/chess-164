@@ -403,6 +403,55 @@ const Droppable = ({ rank, file, onDrop, ...props })=>{
 
 (( next: fix hover image to svg piece, hi-light landing place ))
 
+- natural piece dragging
+
+`$ yarn add react-dnd-preview`
+
+``` jsx
+const Draggable = ({ rank, file, type='piece', isDropped, children }) => {
+  const [dragStyle, drag, preview] = useDrag({
+    item: { rank, file, type },
+    collect: (monitor) => ({
+      opacity: monitor.isDragging() ? 0 : 1,
+    }),
+  })
+
+  return (
+    <div ref={drag} style={dragStyle}>
+      <DragPreviewImage connect={preview} src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z/C/HgAGgwJ/lK3Q6wAAAABJRU5ErkJggg=="/>
+      {children}
+    </div>
+  )
+}
+```
+
+``` jsx
+import { usePreview } from 'react-dnd-preview';
+
+const PiecePreview = () => {
+  const {display, itemType, item, style} = usePreview();
+  if (!display) return null;
+  
+  return <img style={{ ...style, height: 64, width: 64}}
+              src={SVGPieces[itemType]}/>
+};
+
+
+
+
+droppable:
+                  key={''+rank+''+file+''+piece}
+                  
+                  
+  const dragMove = useCallback((start, end)=>{
+    setPieces(pieces=> {
+      pieces[end.rank][end.file] = start.type;
+      pieces[start.rank][start.file] = '';
+
+      return [...pieces];
+    });
+  });
+```
 
 - remove from board / add to board
 - promotion widget

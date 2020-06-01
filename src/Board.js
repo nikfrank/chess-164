@@ -1,10 +1,12 @@
 import React, { useState, useCallback } from 'react';
 import './Board.scss';
 
-import logo from './logo.svg';
+import SVGPieces from 'react-chess-pieces/dist/svg-index';
 
 import Piece from 'react-chess-pieces';
 import { useDrag, useDrop, DragPreviewImage } from 'react-dnd'
+
+import { usePreview } from 'react-dnd-preview';
 
 const initPieces = [
   ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R'],
@@ -19,16 +21,16 @@ const initPieces = [
 
 
 const Draggable = ({ rank, file, type='piece', isDropped, children }) => {
-  const [{ opacity }, drag, preview] = useDrag({
+  const [dragStyle, drag, preview] = useDrag({
     item: { rank, file, type },
     collect: (monitor) => ({
-      opacity: monitor.isDragging() ? 0.4 : 1,
+      opacity: monitor.isDragging() ? 0 : 1,
     }),
   })
-
+  
   return (
-    <div ref={drag} style={{ opacity }}>
-      <DragPreviewImage connect={preview} src={logo}/>
+    <div ref={drag} style={dragStyle}>
+      <DragPreviewImage connect={preview} src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z/C/HgAGgwJ/lK3Q6wAAAABJRU5ErkJggg=="/>
       {children}
     </div>
   )
@@ -54,6 +56,14 @@ const Droppable = ({ rank, file, onDrop, ...props })=>{
     <div ref={drop} {...props}/>
   );
 }
+
+const PiecePreview = () => {
+  const {display, itemType, item, style} = usePreview();
+  if (!display) return null;
+  
+  return <img style={{ ...style, height: '10vh', width: '10vh'}}
+              src={SVGPieces[itemType]}/>
+};
 
 function Board() {
   const [pieces, setPieces] = useState(initPieces)
@@ -81,8 +91,13 @@ function Board() {
     
   }, [selected]);
 
-  const dragMove = useCallback((...a)=>{
-    console.log(a);
+  const dragMove = useCallback((start, end)=>{
+    setPieces(pieces=> {
+      pieces[end.rank][end.file] = start.type;
+      pieces[start.rank][start.file] = '';
+
+      return [...pieces];
+    });
   });
   
   return (
@@ -91,7 +106,7 @@ function Board() {
          <div className='rank' key={rank}>
            {row.map((piece, file)=> (
               <Droppable
-                  key={file}
+                  key={''+rank+''+file+''+piece}
                   rank={rank}
                   file={file}
                   className={'square '+(
@@ -104,10 +119,13 @@ function Board() {
                 <Draggable rank={rank} file={file} type={piece}>
                   <Piece piece={piece}/>
                 </Draggable>
+
               </Droppable>
             ))}
          </div>
        ))}
+         
+         <PiecePreview/>
     </div>
   );
 }
