@@ -92,6 +92,8 @@ function Board() {
   }, [selected]);
 
   const dragMove = useCallback((start, end)=>{
+    console.log(start.type, String.fromCharCode(end.file+97), end.rank+1);
+    
     setPieces(pieces=> {
       pieces[end.rank][end.file] = start.type;
       pieces[start.rank][start.file] = '';
@@ -114,6 +116,7 @@ function Board() {
                       file === selected[1] ? 'selected' : ''
                     ) }
                   onDrop={dragMove}
+                  onDragStart={()=> console.log(piece, String.fromCharCode(file+97), rank+1)}
                   onClick={()=> select(rank, file, piece)}>
                 
                 <Draggable rank={rank} file={file} type={piece}>

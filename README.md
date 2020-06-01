@@ -457,6 +457,9 @@ droppable:
 - promotion widget
 
 
+- controlled component: Game / Analysis -> Board
+  - Board prop callbacks onMove, onTouchPiece, etc.
+
 
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
