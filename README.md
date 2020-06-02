@@ -1,7 +1,5 @@
 # chess with hooks
 
-(part of js 133 course)
-
 
 ## Agenda
 
