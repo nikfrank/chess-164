@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React from 'react';
 import './Board.scss';
 
 import SVGPieces from 'react-chess-pieces/dist/svg-index';
@@ -7,17 +7,6 @@ import Piece from 'react-chess-pieces';
 import { useDrag, useDrop, DragPreviewImage } from 'react-dnd'
 
 import { usePreview } from 'react-dnd-preview';
-
-const initPieces = [
-  ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R'],
-  ['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'],
-  ['', '', '', '', '', '', '', ''],
-  ['', '', '', '', '', '', '', ''],
-  ['', '', '', '', '', '', '', ''],
-  ['', '', '', '', '', '', '', ''],
-  ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
-  ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
-];
 
 
 const blank = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z/C/HgAGgwJ/lK3Q6wAAAABJRU5ErkJggg==';
@@ -68,45 +57,15 @@ const PiecePreview = () => {
   }} />
 };
 
-function Board() {
-  const [pieces, setPieces] = useState(initPieces)
-  const [selected, setSelected] = useState([]);
+function Board({ pieces, onSelect, selected, onClick, onDragEnd }) {
 
-  const select = useCallback((rank, file, piece)=>{
-    if(!selected.length) setSelected([ rank, file, piece ]);
-    else if( rank === selected[0] && file === selected[1] )
-      setSelected([]);
-    
-    else {
-      // analysis board:
-      // setPieces with override
-      setPieces(pieces=> {
-        pieces[rank][file] = selected[2];
-        pieces[selected[0]][selected[1]] = '';
-
-        return [...pieces];
-      });
-      setSelected([]);
-      
-      // game board:
-      // if making a legal move, setPieces
-    }
-    
-  }, [selected]);
-
-  const endDragMove = ((start, end)=>{
-    console.log(start.type, String.fromCharCode(end.file+97), end.rank+1);
-    
-    setPieces(pieces=> {
-      pieces[end.rank][end.file] = start.type;
-      pieces[start.rank][start.file] = '';
-
-      return [...pieces];
-    });
-  });
-
-  const startDragMove = ((rank, file, piece)=>{
-    console.log(piece, String.fromCharCode(file+97), rank+1)
+  const clickHandler = ({ rank, file, piece })=>{
+    if( piece ) onSelect({ rank, file, piece });
+    else onClick({ rank, file });
+  };
+  
+  const startDragMove = (({ rank, file, piece })=>{
+    console.log(piece, String.fromCharCode(file+97), rank+1);
   });
   
   return (
@@ -119,12 +78,12 @@ function Board() {
                   rank={rank}
                   file={file}
                   className={'square '+(
-                      rank === selected[0] &&
-                      file === selected[1] ? 'selected' : ''
+                      rank === selected.rank &&
+                      file === selected.file ? 'selected' : ''
                     ) }
-                  onDrop={endDragMove}
-                  onDragStart={()=> startDragMove(rank, file, piece)}
-                  onClick={()=> select(rank, file, piece)}>
+                  onDrop={onDragEnd}
+                  onDragStart={()=> startDragMove({ rank, file, piece })}
+                  onClick={()=> clickHandler({ rank, file, piece })}>
                 
                 <Draggable rank={rank} file={file} type={piece}>
                   <Piece piece={piece}/>

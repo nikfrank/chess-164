@@ -16,6 +16,7 @@
 - highlight previous move
 - draw / remove arrows
 - send position as link (with title)
+  - load from link
 - export as (format)
 
 - game mode
@@ -188,10 +189,10 @@ import React, { useState, useCallback } from 'react';
 
 function Board() {
   const [pieces, setPieces] = useState(initPieces)
-  const [selected, setSelected] = useState([]);
+  const [selected, setSelected] = useState({});
 
-  const select = useCallback((rank, file, piece)=>{
-    if(!selected.length) setSelected([ rank, file, piece ]);
+  const select = useCallback(({ rank, file, piece })=>{
+    if(!selected.piece) setSelected({ rank, file, piece });
 
   }, [selected]);
   
@@ -201,7 +202,7 @@ function Board() {
 //...
 
               <div className='square' key={file}
-                   onClick={()=> select(rank, file, piece)}>
+                   onClick={()=> select({ rank, file, piece })}>
                 <Piece piece={piece}/>
               </div>
 //...
@@ -243,10 +244,10 @@ display to the user which piece is selected
 
               <div key={file}
                    className={'square '+(
-                       rank === selected[0] &&
-                       file === selected[1] ? 'selected' : ''
+                       rank === selected.rank &&
+                       file === selected.file ? 'selected' : ''
                      ) }
-                   onClick={()=> select(rank, file, piece)}>
+                   onClick={()=> select({ rank, file, piece })}>
                 <Piece piece={piece}/>
               </div>
 
@@ -261,19 +262,19 @@ and we need to move the piece when the second click occurs
 ``` jsx
 //...
 
-  const select = useCallback((rank, file, piece)=>{
-    if(!selected.length) setSelected([ rank, file, piece ]);
-    else if( rank === selected[0] && file === selected[1] )
-      setSelected([]);
+  const select = useCallback(({ rank, file, piece })=>{
+    if(!selected.piece) setSelected({ rank, file, piece });
+    else if( rank === selected.rank && file === selected.file )
+      setSelected({});
     
     else {
       setPieces(pieces=> {
-        pieces[rank][file] = selected[2];
-        pieces[selected[0]][selected[1]] = '';
+        pieces[rank][file] = selected.piece;
+        pieces[selected.rank][selected.file] = '';
 
         return [...pieces];
       });
-      setSelected([]);
+      setSelected({});
     }
     
   }, [selected]);
@@ -389,6 +390,13 @@ to use `Droppable`, we'll replace the `div.sqaure` we have earlier with it
 ```jsx
 
 //...
+  const endDragMove = ((start, end)=>{
+    console.log(start.type, String.fromCharCode(end.file+97), end.rank+1);
+  });
+
+  const startDragMove = (({ rank, file, piece })=>{
+    console.log(piece, String.fromCharCode(file+97), rank+1)
+  });
 
   return (
     <div className="Board">
@@ -400,11 +408,12 @@ to use `Droppable`, we'll replace the `div.sqaure` we have earlier with it
                   rank={rank}
                   file={file}
                   className={'square '+(
-                      rank === selected[0] &&
-                      file === selected[1] ? 'selected' : ''
+                      rank === selected.rank &&
+                      file === selected.file ? 'selected' : ''
                     ) }
-                  onDrop={(start, end)=> console.log('drag ended')}
-                  onClick={()=> select(rank, file, piece)}>
+                  onDrop={endDragMove}
+                  onDragStart={()=> startDragMove({ rank, file, piece })}
+                  onClick={()=> select({ rank, file, piece })}>
                 
                 <Draggable rank={rank} file={file} type={piece}>
                   <Piece piece={piece}/>
@@ -454,7 +463,7 @@ const PiecePreview = () => {
 
 ```
 
-we could use the `onDrop` callback prop to trigger piece moves like with clicks before (feel free to do so as an exercise)
+we could use the `onDrop` callback prop to trigger piece moves like with clicks before (feel free to do so as an exercise); now it just logs what move the user is trying to make.
 
 however, our next section will move the logic for handling `pieceMove` events into the `App` to follow the controlled component pattern
 
@@ -467,14 +476,293 @@ the `App` will maintain state of the game (`pieces`) and respond to events by up
 later, when we build arrows or hi-lighting features, they will work the same way.
 
 
-- controlled component: Game / Analysis -> Board
-  - Board prop callbacks onMove, onTouchPiece, etc.
+### controlled component: Game / Analysis -> Board
 
+Before we build or import the logic for the game of chess (how the pieces move, is it stalemate?, etc) we want to build a decision hierarchy so we can change the rules later if we want.
+
+For instance, we may want to build an analysis board which connects to an online chess engine - and so we want to suspend enforcement for users to construct a position. We would still want the same `Board`, but we'll use it in a different view (one that allows illegal positions / movements).
+
+Or perhaps we'll want to have multiple `Board`s at a time. Anything is possible!
+
+
+We'll start by moving the `pieces` state up to `App` in a `Game` Component
+
+<sub>./src/App.js</sub>
+``` jsx
+//...
+
+const initPieces = [
+  //...
+];
+
+
+const Game = ()=>{
+  const [pieces, setPieces] = useState(initPieces);
+
+  return (
+    <Board pieces={pieces}/>
+  );
+}
+
+function App() {
+  return (
+    <div className="App">
+      <DndProvider backend={HTML5Backend}>
+        <Game />
+      </DndProvider>
+    </div>
+  );
+}
+
+//...
+```
+
+and refactoring it in `Board` from a state variable to a prop
+
+<sub>./src/Board.js</sub>
+``` diff
+//...
+
+-const initPieces = [
+-  ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R'],
+-  ['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'],
+-  ['', '', '', '', '', '', '', ''],
+-  ['', '', '', '', '', '', '', ''],
+-  ['', '', '', '', '', '', '', ''],
+-  ['', '', '', '', '', '', '', ''],
+-  ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
+-  ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
+-];
+
+//...
+
++function Board({ pieces }) {
+-function Board() {
+-  const [pieces, setPieces] = useState(initPieces)
+
+```
+
+and (for now) removing the state updates
+
+``` diff
+//... select
+
+-      setPieces(pieces=> {
+-        pieces[rank][file] = selected.piece;
+-        pieces[selected.rank][selected.file] = '';
+-
+-        return [...pieces];
+-      });
+
+//... endDragMove
+
+-    setPieces(pieces=> {
+-      pieces[end.rank][end.file] = start.type;
+-      pieces[start.rank][start.file] = '';
+-
+-      return [...pieces];
+-    });
+
+//...
+```
+
+now we'll rewrite these functions to call the props callbacks appropriately
+
+this will allow the `Board` to trigger state changes when the user interacts with it
+
+first, we can make placeholder functions in `Game` to pass to `Board`
+
+<sub>./src/App.js</sub>
+``` jsx
+import React, { useState } from 'react';
+
+//...
+
+const Game = ()=>{
+  const [pieces, setPieces] = useState(initPieces);
+
+  const onSelect = ({ rank, file, piece })=> console.log('select');
+  const onDragStart = ({ rank, file, piece })=> console.log('drag start');
+  const onDragHover = ({ start, hovering })=> console.log('drag hover');
+  const onDragEnd = (start, end)=> console.log('drag end');
+  const onClick = ({ rank, file })=> console.log('click');
+  const onRightClick = ({ rank, file, piece })=> console.log('right click');
+  
+  return (
+    <Board
+        pieces={pieces}
+        onSelect={onSelect}
+        onDragStart={onDragStart}
+        onDragHover={onDragHover}
+        onDragEnd={onDragEnd}
+        onClick={onClick}
+        onRightClick={onRightClick}
+    />
+  );
+}
+
+//...
+```
+
+now we can refactor our selection and movement logic from `Board` into `Game`
+
+<sub>./src/Board.js</sub>
+``` diff
+//...
+
+-  const [selected, setSelected] = useState({});
+-
+-  const select = useCallback(({ rank, file, piece })=>{
+-    if(!selected.piece) setSelected({ rank, file, piece });
+-    else if( rank === selected.rank && file === selected.file )
+-      setSelected({});
+-
+-    else {
+-      setPieces(pieces=> {
+-        pieces[rank][file] = selected.piece;
+-        pieces[selected.rank][selected.file] = '';
+-
+-        return [...pieces];
+-      });
+-      setSelected({});
+-    }
+-
+-  }, [selected]);
+
+//...
+```
+
+our data now comes from props, and our click handler can call move or select
+
+``` jsx
+//...
+
+function Board({ pieces, onSelect, selected, onClick }) {
+
+  const clickHandler = ({ rank, file, piece })=>{
+    if( piece ) onSelect({ rank, file, piece });
+    else onClick({ rank, file });
+  };
+
+  //...
+  
+              <Droppable
+                  key={''+rank+''+file+''+piece}
+                  rank={rank}
+                  file={file}
+                  className={'square '+(
+                      rank === selected.rank &&
+                      file === selected.file ? 'selected' : ''
+                    ) }
+                  onDrop={endDragMove}
+                  onDragStart={()=> startDragMove({ rank, file, piece })}
+                  onClick={()=> clickHandler({ rank, file, piece })}>
+
+  //...
+
+}
+
+//...
+```
+
+<sub>./src/App.js</sub>
+
+``` jsx
+import React, { useState, useCallback } from 'react';
+
+//...
+
+const Game = ()=>{
+  const [pieces, setPieces] = useState(initPieces);
+  const [selected, setSelected] = useState({});
+
+  const onMove = useCallback(({ rank, file })=>{
+    setPieces(pieces => {
+      pieces[rank][file] = selected.piece;
+      pieces[selected.rank][selected.file] = '';
+
+      return [...pieces];
+    });
+    setSelected({});
+  }, [setPieces, selected]);
+  
+  const onSelect = useCallback(({ rank, file, piece })=>{
+    if(!selected.piece) setSelected({ rank, file, piece });
+    else if( rank === selected.rank && file === selected.file )
+      setSelected({});
+    else onMove({ rank, file }); // capture?
+  }, [selected]);
+
+  const onClick = ({ rank, file })=> {
+    if( selected.piece ) onMove({ rank, file });
+    // noop
+  };
+  
+  //... (the jsx)
+}
+
+//...
+```
+
+now we can finally get the drag-n-drop to play the move
+
+<sub>./src/Board.js</sub>
+``` jsx
+//...
+
+function Board({ pieces, onSelect, selected, onClick, onDragEnd }) {
+
+//...
+
+                  onDrop={onDragEnd}
+                  
+//...
+```
+
+with a bit of shimming to deal with the `react-dnd` behaviour, and a refactor to reuse our `onMove` function
+
+<sub>./src/App.js</sub>
+``` jsx
+//...
+
+  const onMove = useCallback(({ rank, file }, moveFrom=selected)=>{
+    setPieces(pieces => {
+      pieces[rank][file] = moveFrom.piece;
+      pieces[moveFrom.rank][moveFrom.file] = '';
+
+      return [...pieces];
+    });
+    setSelected({});
+
+  }, [setPieces, seleted]);
+  
+  //...
+
+  const onDragEnd = (start, end)=> {
+    if( start.rank === end.rank && start.file === end.file ) return;
+    onMove(end, { ...start, piece: start.type });
+  };
+
+//...
+```
+
+fantastic. We should take a break now to defeat whoever is nearby at chess on our minimally compliant `Board` (almost minimally compliant... we'll need promotion to play a full game)
+
+---
 
 
 - remove from board / add to board
 - promotion widget
 
+- chess.js legalMoves
+- showing legalMoves on select / dragHover
+- enforcing legal moves
+
+
+- check / draw / stalemate / checkmate / illegal
+
+- highlight previous move
+- draw / remove arrows
 
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
