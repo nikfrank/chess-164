@@ -20,17 +20,19 @@ const initPieces = [
 ];
 
 
-const Draggable = ({ rank, file, type='piece', isDropped, children }) => {
+const blank = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z/C/HgAGgwJ/lK3Q6wAAAABJRU5ErkJggg==';
+
+const Draggable = ({ rank, file, type, children }) => {
   const [dragStyle, drag, preview] = useDrag({
     item: { rank, file, type },
     collect: (monitor) => ({
       opacity: monitor.isDragging() ? 0 : 1,
     }),
-  })
-  
+  });
+
   return (
     <div ref={drag} style={dragStyle}>
-      <DragPreviewImage connect={preview} src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z/C/HgAGgwJ/lK3Q6wAAAABJRU5ErkJggg=="/>
+      <DragPreviewImage connect={preview} src={blank}/>
       {children}
     </div>
   )
@@ -43,7 +45,7 @@ const anyPiece = [
 ];
 
 const Droppable = ({ rank, file, onDrop, ...props })=>{
-  const [{ isOver, canDrop }, drop] = useDrop({
+  const [, drop] = useDrop({
     accept: anyPiece,
     drop: (dragItem)=> onDrop(dragItem, {rank, file}),
     collect: (monitor) => ({
@@ -58,11 +60,12 @@ const Droppable = ({ rank, file, onDrop, ...props })=>{
 }
 
 const PiecePreview = () => {
-  const {display, itemType, item, style} = usePreview();
-  if (!display) return null;
-  
-  return <img style={{ ...style, height: '10vh', width: '10vh'}}
-              src={SVGPieces[itemType]}/>
+  const {display, itemType, style} = usePreview();
+
+  return <img alt='' src={SVGPieces[itemType]} style={{
+    ...style, height: '10vh', width: '10vh',
+    display: display ? '' : 'none',
+  }} />
 };
 
 function Board() {
@@ -91,7 +94,7 @@ function Board() {
     
   }, [selected]);
 
-  const dragMove = useCallback((start, end)=>{
+  const endDragMove = ((start, end)=>{
     console.log(start.type, String.fromCharCode(end.file+97), end.rank+1);
     
     setPieces(pieces=> {
@@ -100,6 +103,10 @@ function Board() {
 
       return [...pieces];
     });
+  });
+
+  const startDragMove = ((rank, file, piece)=>{
+    console.log(piece, String.fromCharCode(file+97), rank+1)
   });
   
   return (
@@ -115,8 +122,8 @@ function Board() {
                       rank === selected[0] &&
                       file === selected[1] ? 'selected' : ''
                     ) }
-                  onDrop={dragMove}
-                  onDragStart={()=> console.log(piece, String.fromCharCode(file+97), rank+1)}
+                  onDrop={endDragMove}
+                  onDragStart={()=> startDragMove(rank, file, piece)}
                   onClick={()=> select(rank, file, piece)}>
                 
                 <Draggable rank={rank} file={file} type={piece}>
@@ -128,7 +135,7 @@ function Board() {
          </div>
        ))}
          
-         <PiecePreview/>
+      <PiecePreview/>
     </div>
   );
 }

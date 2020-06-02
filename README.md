@@ -313,24 +313,35 @@ export default App;
 ```
 
 
+### making pieces draggable
+
+we need to make the original piece invisible, and override the module's preview by passing a blank image to a `<DragPreviewImage/>`
+
+to do this, we'll wrap our `<Piece/>` with a new `Draggable` mixin component.
+
+later, we'll use a different module for preview which will give us more control of how we display the preview image (aka the piece while we're dragging it)
+
+
 <sub>./src/Board.js</sub>
 ``` jsx
 //...
 import { useDrag, useDrop, DragPreviewImage } from 'react-dnd'
 
+const blank = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z/C/HgAGgwJ/lK3Q6wAAAABJRU5ErkJggg==';
+
 //...
 
-const Draggable = ({ rank, file, type='piece', isDropped, children }) => {
-  const [{ opacity }, drag, preview] = useDrag({
+const Draggable = ({ rank, file, type, children }) => {
+  const [dragStyle, drag, preview] = useDrag({
     item: { rank, file, type },
     collect: (monitor) => ({
-      opacity: monitor.isDragging() ? 0.4 : 1,
+      opacity: monitor.isDragging() ? 0 : 1,
     }),
   })
 
   return (
-    <div ref={drag} style={{ opacity }}>
-      <DragPreviewImage connect={preview} src={logo}/>
+    <div ref={drag} style={dragStyle}>
+      <DragPreviewImage connect={preview} src={blank}/>
       {children}
     </div>
   )
@@ -339,13 +350,17 @@ const Draggable = ({ rank, file, type='piece', isDropped, children }) => {
 
 //...
 
-                <Draggable>
+                <Draggable rank={rank} file={file} type={piece}>
                   <Piece piece={piece}/>
                 </Draggable>
 
 //...
 ```
 
+### making squares droppable
+
+
+similarly, we'll need to make the board squares `Droppable`
 
 <sub>./src/Board.js</sub>
 ``` jsx
@@ -355,20 +370,25 @@ const anyPiece = [
 ];
 
 const Droppable = ({ rank, file, onDrop, ...props })=>{
-  const [{ isOver, canDrop }, drop] = useDrop({
+  const [_, drop] = useDrop({
     accept: anyPiece,
     drop: (dragItem)=> onDrop(dragItem, {rank, file}),
-    collect: (monitor) => ({
-      isOver: monitor.isOver(),
-      canDrop: monitor.canDrop(),
-    }),
   });
 
   return (
     <div ref={drop} {...props}/>
   );
 }
+```
 
+which, for now, will let any piece land anywhere any time.
+
+this will change once we convert our board to a controlled component and program a `Game` or `Analysis` view to control it (in the next section).
+
+
+to use `Droppable`, we'll replace the `div.sqaure` we have earlier with it
+
+```jsx
 
 //...
 
@@ -378,14 +398,14 @@ const Droppable = ({ rank, file, onDrop, ...props })=>{
          <div className='rank' key={rank}>
            {row.map((piece, file)=> (
               <Droppable
-                  key={file}
+                  key={''+rank+''+file+''+piece}
                   rank={rank}
                   file={file}
                   className={'square '+(
                       rank === selected[0] &&
                       file === selected[1] ? 'selected' : ''
                     ) }
-                  onDrop={dragMove}
+                  onDrop={(start, end)=> console.log('drag ended')}
                   onClick={()=> select(rank, file, piece)}>
                 
                 <Draggable rank={rank} file={file} type={piece}>
@@ -400,65 +420,62 @@ const Droppable = ({ rank, file, onDrop, ...props })=>{
 
 ```
 
+we'll also set the key to update whenever the piece updates, in order to trigger a render (we need to render prop values to the `Draggable` for it to work on the next move(s)) while still being sufficiently unique.
 
-(( next: fix hover image to svg piece, hi-light landing place ))
+this key trick (seen here)[https://stackoverflow.com/questions/30626030/can-you-force-a-react-component-to-rerender-without-calling-setstate] is necessary because internally `react-dnd` uses `React.memo` for some of the values we pass it (to its hooks).
 
-- natural piece dragging
+
+### showing the piece while being dragged (preview image)
+
+lastly, we'll want the user to feel like they're moving a real piece around, blundering just the same.
+
+to do this, we'll use a drag-preview add on module for `react-dnd`
+
 
 `$ yarn add react-dnd-preview`
 
-``` jsx
-const Draggable = ({ rank, file, type='piece', isDropped, children }) => {
-  const [dragStyle, drag, preview] = useDrag({
-    item: { rank, file, type },
-    collect: (monitor) => ({
-      opacity: monitor.isDragging() ? 0 : 1,
-    }),
-  })
-
-  return (
-    <div ref={drag} style={dragStyle}>
-      <DragPreviewImage connect={preview} src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z/C/HgAGgwJ/lK3Q6wAAAABJRU5ErkJggg=="/>
-      {children}
-    </div>
-  )
-}
-```
 
 ``` jsx
 import { usePreview } from 'react-dnd-preview';
 
 const PiecePreview = () => {
   const {display, itemType, item, style} = usePreview();
-  if (!display) return null;
-  
-  return <img style={{ ...style, height: 64, width: 64}}
-              src={SVGPieces[itemType]}/>
+
+  return <img alt='' src={SVGPieces[itemType]} style={{
+    ...style, height: '10vh', width: '10vh',
+    display: display ? '' : 'none',
+  }} />
 };
 
 
+//... before the last </div> tag
 
+      <PiecePreview/>
 
-droppable:
-                  key={''+rank+''+file+''+piece}
-                  
-                  
-  const dragMove = useCallback((start, end)=>{
-    setPieces(pieces=> {
-      pieces[end.rank][end.file] = start.type;
-      pieces[start.rank][start.file] = '';
+//...
 
-      return [...pieces];
-    });
-  });
 ```
 
-- remove from board / add to board
-- promotion widget
+we could use the `onDrop` callback prop to trigger piece moves like with clicks before (feel free to do so as an exercise)
+
+however, our next section will move the logic for handling `pieceMove` events into the `App` to follow the controlled component pattern
+
+the `Board` will show the user pieces and spaces, and allow the user to interact with the pieces (click / dnd), triggering callbacks for events (move, droppedOffBoard, dragStart, dragHover, onClick)
+
+
+the `App` will maintain state of the game (`pieces`) and respond to events by updating the state and rendering it back to the `Board`.
+
+
+later, when we build arrows or hi-lighting features, they will work the same way.
 
 
 - controlled component: Game / Analysis -> Board
   - Board prop callbacks onMove, onTouchPiece, etc.
+
+
+
+- remove from board / add to board
+- promotion widget
 
 
 
