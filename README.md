@@ -20,9 +20,12 @@
 - export as (format)
 
 - game mode
-- turns
-- clock
-- block illegal moves
+  - turns, moves
+  - clock
+  - block illegal moves
+
+- analysis mode
+  - branching moves
 
 - online mode
 - firebase
@@ -750,6 +753,151 @@ fantastic. We should take a break now to defeat whoever is nearby at chess on ou
 
 ---
 
+### Quick Refactor
+
+It'll be more convenient now to think of our application structure (before it's too late!)
+
+We'll have two main views: Game and Analysis (both with `Board`s), which should each be in their own files
+
+`App` should manage the view-routing and not much else
+
+We should put our chess utility functions into one file (chess-util.js) so that they can be used from either view
+
+`$ touch src/chess-util.js src/Game.js`
+
+
+<sub>./src/chess-util.js</sub>
+``` js
+// placeholder for now
+
+export const calculateLegalMoves = (pieces, turn, moveFrom)=> [];
+
+export const initPieces = [
+  //...
+];
+```
+
+<sub>./src/Game.js</sub>
+``` jsx
+import React, { useState, useCallback } from 'react';
+import Board from './Board';
+
+import { initPieces } from './chess-util';
+
+
+const Game = ()=>{
+  //...
+};
+
+export default Game;
+```
+
+<sub>./src/App.js</sub>
+``` jsx
+import React from 'react';
+import './App.scss';
+
+import { HTML5Backend } from 'react-dnd-html5-backend'
+import { DndProvider } from 'react-dnd'
+
+import Game from './Game';
+
+function App() {
+  //...
+}
+
+export default App;
+```
+
+now we have a place for our chess game logic, and a first draft ontology for our files.
+
+
+---
+
+### The Rules of Chess
+
+
+Now that we have one single function which manages making a requested move and one to calculate legal moves, we can apply the rules to the game.
+
+[chess.js](https://github.com/jhlywa/chess.js/blob/master/README.md) is a widely used available library which will do most of the computations for us.
+
+
+`$ yarn add chess.js`
+
+
+we'll need to track more information to have a complete game
+
+<sub>./src/Game.js</sub>
+``` jsx
+//...
+
+import { initPieces, calculateLegalMoves } from './chess-util';
+
+const Game = ()=>{
+  const [pieces, setPieces] = useState(initPieces);
+  const [selected, setSelected] = useState({});
+  const [turn, setTurn] = useState('w');
+  const [moves, setMoves] = useState([]);
+
+  const onMove = useCallback(({ rank, file }, moveFrom=selected)=>{
+    const legalMoves = calculateLegalMoves(pieces, turn, moveFrom);
+    // include castling if relevant based on turn, moves
+
+    // if move is in list, continue : otherwise return
+    // if move is O-O or O-O-O, recalculate pieces thusly
+    // otherwise
+    setPieces(pieces => {
+      pieces[rank][file] = moveFrom.piece;
+      pieces[moveFrom.rank][moveFrom.file] = '';
+
+      return [...pieces];
+    });
+    setSelected({});
+    setTurn(turn => turn === 'w' ? 'b' : 'w');
+
+    // push move in unambiguous notation (eg Nb4c6)
+    
+  }, [setPieces, selected]);
+
+  //...
+  
+}
+
+//...
+```
+
+for now, pseudocoding the solution will suffice.
+
+
+<sub>./src/chess-util.js</sub>
+``` js
+import Chess from 'chess.js';
+
+export const calculateLegalMoves = (pieces, turn, moveFrom)=> {
+  // convert pieces + turn into FEN
+  // new Chess(FEN).moves()
+};
+
+//...
+```
+
+our `calculateLegalMoves` will leave out castles, as FEN retains castling privileges separately, so will we.
+
+
+#### FEN
+
+to get chess.js to tell us what we want to know, we'll need to pass it the current board state. This can be achieved via the [FEN](https://en.wikipedia.org/wiki/Forsyth%E2%80%93Edwards_Notation) constructor API.
+
+
+we'll need to convert our `pieces` matrix into proper FEN.
+
+<sub>./src/chess-util.js</sub>
+``` js
+
+```
+
+
+
 
 - remove from board / add to board
 - promotion widget
@@ -763,6 +911,14 @@ fantastic. We should take a break now to defeat whoever is nearby at chess on ou
 
 - highlight previous move
 - draw / remove arrows
+
+
+refactors
+
+
+We should make `Draggable` and `Droppable` reusable by putting them in their own file (we'll need `Draggable` again for promotion widget etc)
+
+
 
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
