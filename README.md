@@ -770,7 +770,7 @@ We should put our chess utility functions into one file (chess-util.js) so that 
 ``` js
 // placeholder for now
 
-export const calculateLegalMoves = (pieces, turn, moveFrom)=> [];
+export const calculateLegalMoves = (pieces, turn, moves, moveFrom)=> [];
 
 export const initPieces = [
   //...
@@ -840,9 +840,7 @@ const Game = ()=>{
   const [moves, setMoves] = useState([]);
 
   const onMove = useCallback(({ rank, file }, moveFrom=selected)=>{
-    const legalMoves = calculateLegalMoves(pieces, turn, moveFrom);
-    // include castling if relevant based on turn, moves
-
+    const legalMoves = calculateLegalMoves(pieces, turn, moves, moveFrom);
     // if move is in list, continue : otherwise return
     // if move is O-O or O-O-O, recalculate pieces thusly
     // otherwise
@@ -855,7 +853,7 @@ const Game = ()=>{
     setSelected({});
     setTurn(turn => turn === 'w' ? 'b' : 'w');
 
-    // push move in unambiguous notation (eg Nb4c6)
+    // push move as { start: {rank, file, piece}, end: {rank, file} }
     
   }, [setPieces, selected]);
 
@@ -873,15 +871,17 @@ for now, pseudocoding the solution will suffice.
 ``` js
 import Chess from 'chess.js';
 
-export const calculateLegalMoves = (pieces, turn, moveFrom)=> {
-  // convert pieces + turn into FEN
+export const calculateLegalMoves = (pieces, turn, moves, moveFrom)=> {
+  // convert pieces + turn + moves into FEN
   // new Chess(FEN).moves()
 };
 
 //...
 ```
 
-our `calculateLegalMoves` will leave out castles, as FEN retains castling privileges separately, so will we.
+we're going to use `chess.js` to answer questions about our game, not to manage it entirely. To do so, we'll have to code a utility function to convert our state into FEN.
+
+Our goal in doing this is to maintain our own state to allow any feature, to write good code in a relevant module interface style, and to prepare for replacing `chess.js` with our own module in a later course.
 
 
 #### FEN
@@ -889,13 +889,168 @@ our `calculateLegalMoves` will leave out castles, as FEN retains castling privil
 to get chess.js to tell us what we want to know, we'll need to pass it the current board state. This can be achieved via the [FEN](https://en.wikipedia.org/wiki/Forsyth%E2%80%93Edwards_Notation) constructor API.
 
 
-we'll need to convert our `pieces` matrix into proper FEN.
+we'll need to convert our `pieces` matrix into proper FEN to use `chess.js`'s `.moves()` method
+
+<sub>./src/chess-util.js</sub>
+``` js
+export const calculateFEN = (pieces, turn, moves)=> {...};
+```
+this will be a good opportunity to practice TDD
+
+`$ touch ./src/chess-util.test.js`
+
+`$ yarn test`
+
+<sub>./src/chess-util.test.js</sub>
+``` js
+import React from 'react';
+import { initPieces, calculateFEN } from './chess-util';
+
+describe('calculateFEN', ()=>{
+  it('calculates correctly', ()=>{
+    const startingFEN =
+      'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
+    
+    const output = calculateFEN(initPieces, 'w', []);
+    
+    expect(output).toEqual(startingFEN);
+  });
+});
+```
+
+we should see now our test output failing
+
+
+(to ignore the <sub>App.test.js</sub> which is not relevant right now
+
+<sub>./src/App.test.js</sub>
+``` jsx
+import React from 'react';
+import { render } from '@testing-library/react';
+import App from './App';
+
+test.skip('renders learn react link', () => {
+  const { getByText } = render(<App />);
+  const linkElement = getByText(/learn react/i);
+  expect(linkElement).toBeInTheDocument();
+});
+```
+
+we can skip the test for now)
+
+now that we see our test is failing, we can bother to code a solution
+
+<sub>./src/chess-util.js</sub>
+``` js
+//...
+
+export const calculateFEN = (pieces, turn, moves)=> {
+  // FEN parts:
+  // pieces on board
+  // turn
+  // castling privs
+  // en passant target
+  // halfmove count
+  // move number
+};
+
+//...
+```
+
+to make the first test pass, we really only need to solve the pieces step
+
+``` js
+//...
+
+export const calculateFEN = (pieces, turn, moves)=> {
+  const fenPieces =
+    pieces.reduce((fen, rank)=>
+      rank.reduce((row, piece)=>
+        piece ? row + piece :
+          !row ? '1' :
+            !row[row.length-1].match(/\d/) ? row + '1' :
+              row.slice(0, -1) + (1*row[row.length-1] + 1)
+                , '') + '/' + fen, '').slice(0, -1);
+
+  const privs = 'KQkq';
+
+  const ept = '-';
+
+  const halfturns = 0;
+
+  const moveNumber = 1;
+  
+  return `${fenPieces} ${turn[0]} ${privs} ${ept} ${halfturns} ${moveNumber}`;
+
+};
+
+//...
+```
+
+
+we can solve the rest once we have test cases for them.
+
+I recommend at this point coding a solution that you understand and like. I've written mine how I prefer, but the value in this course is to help make sense of the world - so dig deep and find the way you want to be able to code this solution! As long as you write good test cases, you can be confident your utility is correct.
+
+
+now let's write more test cases:
+
+<sub>./src/chess-util.test.js</sub>
+``` js
+//... e4
+'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1'
+
+//... c5 (B20: Sicilian)
+'rnbqkbnr/pp1ppppp/8/2p5/4P3/8/PPPP1PPP/RNBQKBNR w KQkq c6 0 2'
+
+//... Nf3 (main line)
+'rnbqkbnr/pp1ppppp/8/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2'
+```
+
+
+
+
+now we can ask for a list of legal moves
 
 <sub>./src/chess-util.js</sub>
 ``` js
 
 ```
 
+
+<sub>./src/Game.js</sub>
+``` jsx
+
+```
+
+now we can fix the movements for castling
+
+``` jsx
+
+```
+
+### Displaying legal moves on the Board
+
+now that we can calculate the legal moves whenever we want, we should show the user legal moves for a piece when it is selected or dragged.
+
+
+``` jsx
+  <Board
+    ...
+    onDragStart={...}
+    onSelect={...}
+    markers={...} />
+```
+
+
+and of course, when a user hover-drags a piece over a legal move, it should highlight
+
+``` jsx
+  <Board
+    ...
+    onDragHover={({ rank, file })=> {...}}
+    highlights={...} />
+```
 
 
 

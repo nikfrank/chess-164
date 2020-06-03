@@ -11,9 +11,7 @@ const Game = ()=>{
   const [moves, setMoves] = useState([]);
 
   const onMove = useCallback(({ rank, file }, moveFrom=selected)=>{
-    const legalMoves = calculateLegalMoves(pieces, turn, moveFrom);
-    // include castling if relevant based on turn, moves
-
+    const legalMoves = calculateLegalMoves(pieces, turn, moves, moveFrom);
     // if move is in list, continue : otherwise return
     // if move is O-O or O-O-O, recalculate pieces thusly
     // otherwise
@@ -26,7 +24,7 @@ const Game = ()=>{
     setSelected({});
     setTurn(turn => turn === 'w' ? 'b' : 'w');
 
-    // push move in unambiguous notation (eg Nb4c6)
+    // push move as { start: {rank, file, piece}, end: {rank, file} }
     
   }, [setPieces, selected]);
   
