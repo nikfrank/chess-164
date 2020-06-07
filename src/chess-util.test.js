@@ -72,20 +72,74 @@ describe('calculateFEN', ()=>{
 
   
   it('calculates correctly for castling', ()=>{
-    const FEN =
-      'rnbqkbnr/pp1ppppp/8/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2';
-
-    let pieces = [
-      [], [], [], [], [], [], [], [],
-    ];
     
-
     // castled
-    // moved Rook
-    // moved King
-    // played without Rook
+    const castledFEN =
+      'rnbq1rk1/pppp1ppp/4bn2/4p3/4P3/4BN2/PPPP1PPP/RNBQ1RK1 w - - 6 5';
     
-    const output = calculateFEN(pieces, 'b', ['Pe2e4']);
-    expect(output).toEqual(FEN);
+    const castledPieces = [
+      ['R', 'N', 'B', 'Q',  '', 'R', 'K',  ''],
+      ['P', 'P', 'P', 'P',  '', 'P', 'P', 'P'],
+      [ '',  '',  '',  '', 'B', 'N',  '',  ''],
+      [ '',  '',  '',  '', 'P',  '',  '',  ''],
+      [ '',  '',  '',  '', 'p',  '',  '',  ''],
+      [ '',  '',  '',  '', 'b', 'n',  '',  ''],
+      ['p', 'p', 'p', 'p',  '', 'p', 'p', 'p'],
+      ['r', 'n', 'b', 'q',  '', 'r', 'k',  ''],
+    ];
+
+    const castledMoves = [
+      'Pe2e4', 'pe7e5', 'Ng1f3', 'ng8f6', 'Bf1d3', 'bf8d6', 'O-O', 'o-o',
+    ];
+
+    const castledOutput = calculateFEN(castledPieces, 'w', castledMoves);
+    expect(castledOutput).toEqual(castledFEN);
+
+    
+    // moved Rook / King
+
+    const movedFEN =
+      'rnbq1bnr/ppppkppp/8/4p3/7P/7R/PPPPPPP1/RNBQKBN1 w Q - 2 3';
+    
+    const movedPieces = [
+      ['R', 'N', 'B', 'Q', 'K', 'B', 'N',  ''],
+      ['P', 'P', 'P', 'P', 'P', 'P', 'P',  ''],
+      [ '',  '',  '',  '',  '',  '',  '', 'R'],
+      [ '',  '',  '',  '',  '',  '',  '', 'P'],
+      [ '',  '',  '',  '', 'p',  '',  '',  ''],
+      [ '',  '',  '',  '',  '',  '',  '',  ''],
+      ['p', 'p', 'p', 'p', 'k', 'p', 'p', 'p'],
+      ['r', 'n', 'b', 'q',  '', 'b', 'n', 'r'],
+    ];
+
+    const movedMoves = [
+      'Ph2h4', 'pe7e5', 'Rh1h3', 'ke8e7',
+    ];
+
+    const movedOutput = calculateFEN(movedPieces, 'w', movedMoves);
+    expect(movedOutput).toEqual(movedFEN);
+
+    
+    // played without Rook
+
+    const oddsFEN =
+      'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBN1 w Qkq - 0 1';
+    
+    const oddsPieces = [
+      ['R', 'N', 'B', 'Q', 'K', 'B', 'N',  ''],
+      ['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'],
+      [ '',  '',  '',  '',  '',  '',  '',  ''],
+      [ '',  '',  '',  '',  '',  '',  '',  ''],
+      [ '',  '',  '',  '',  '',  '',  '',  ''],
+      [ '',  '',  '',  '',  '',  '',  '',  ''],
+      ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
+      ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
+    ];
+
+    const oddsMoves = [];
+
+    const oddsOutput = calculateFEN(oddsPieces, 'w', oddsMoves);
+    expect(oddsOutput).toEqual(oddsFEN);
+    
   });
 });
