@@ -1148,8 +1148,6 @@ and another test for castling (castled, moved Rook, moved King, played without R
 ```
 
 
-
-
 now we can make our tests turn green!
 
 our first failing test is the "en passant target" field - when a pawn moves 2 squares from init, the 3rd or 7th rank square it crosses becomes for one turn the en passant target
@@ -1219,8 +1217,19 @@ castling privilege entails and rook and king that haven't moved
 
 ```
 
-
 our tests should pass now! what a relief.
+
+
+we've also invented a notation for chess moves which is a little different than standard:
+
+ - black moves are all lowercase (including o-o, o-o-o)
+ - pawn moves have a p / P for the piece character
+ - all moves use redundant / unambiguous notation for moveFrom + moveTo
+   - eg: e4 is written Pe2e4
+ - the x goes at the end for captures
+ - checks and checkmates are not annotated
+
+this was to improve the notation's use by program - standard notation is convenient for humans, which is simply not our concern.
 
 
 ### legal moves
