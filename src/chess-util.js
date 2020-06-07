@@ -16,10 +16,10 @@ export const calculateFEN = (pieces, turn, moves)=> {
     ['K', 'O'].includes(move[0]) ? privs.replace(/[KQ]/g, '') :
     ['k', 'o'].includes(move[0]) ? privs.replace(/[kq]/g, '') :
 
-    move.slice(0,3) === 'Ra1' ? privs.replace('Q', ''):
-    move.slice(0,3) === 'Rh1' ? privs.replace('K', ''):
-    move.slice(0,3) === 'ra8' ? privs.replace('q', ''):
-    move.slice(0,3) === 'rh8' ? privs.replace('k', ''):
+    move.slice(0,3) === 'Ra1' ? privs.replace('Q', '') :
+    move.slice(0,3) === 'Rh1' ? privs.replace('K', '') :
+    move.slice(0,3) === 'ra8' ? privs.replace('q', '') :
+    move.slice(0,3) === 'rh8' ? privs.replace('k', '') :
 
     privs
   ), (

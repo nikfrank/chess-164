@@ -1202,10 +1202,10 @@ castling privilege entails and rook and king that haven't moved
     ['K', 'O'].includes(move[0]) ? privs.replace(/[KQ]/g, '') :
     ['k', 'o'].includes(move[0]) ? privs.replace(/[kq]/g, '') :
 
-    move.slice(0,3) === 'Ra1' ? privs.replace('Q', ''):
-    move.slice(0,3) === 'Rh1' ? privs.replace('K', ''):
-    move.slice(0,3) === 'ra8' ? privs.replace('q', ''):
-    move.slice(0,3) === 'rh8' ? privs.replace('k', ''):
+    move.slice(0,3) === 'Ra1' ? privs.replace('Q', '') :
+    move.slice(0,3) === 'Rh1' ? privs.replace('K', '') :
+    move.slice(0,3) === 'ra8' ? privs.replace('q', '') :
+    move.slice(0,3) === 'rh8' ? privs.replace('k', '') :
 
     privs
   ), (
@@ -1242,6 +1242,19 @@ having calculated the FEN, we can now ask for a list of legal moves from `chess.
 
 ```
 
+we now have to keep track of moves in our notation to pass as a parameter
+
+<sub>./src/Game.js</sub>
+```jsx
+
+```
+
+and convert the moves back into our format from what `chess.js` gives us
+<sub>./src/chess-util.js</sub>
+```js
+
+```
+
 
 and use them to block illegal moves
 
@@ -1262,7 +1275,7 @@ once our promotion widget works, we'll have a real chessboard!
 
 ### Promotion Widget
 
-When a pawn attempts to land on the end of the board, we need to show the user a widget and wait for their choice.
+When a pawn attempts to land on the end of the board, we need to show the user a widget and wait for their choice. They may choose to cancel, or promote to N / B / R / Q
 
 
 <sub>./src/Game.js</sub>
