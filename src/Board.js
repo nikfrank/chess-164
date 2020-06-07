@@ -33,8 +33,8 @@ const anyPiece = [
   'P', 'R', 'N', 'B', 'K', 'Q',
 ];
 
-const Droppable = ({ rank, file, onDrop, ...props })=>{
-  const [, drop] = useDrop({
+const Droppable = ({ rank, file, hoverBg='red', onDrop, ...props })=>{
+  const [{ isOver, canDrop }, drop] = useDrop({
     accept: anyPiece,
     drop: (dragItem)=> onDrop(dragItem, {rank, file}),
     collect: (monitor) => ({
@@ -44,7 +44,7 @@ const Droppable = ({ rank, file, onDrop, ...props })=>{
   });
 
   return (
-    <div ref={drop} {...props}/>
+    <div ref={drop} {...props} style={!isOver ? {} : { backgroundColor: hoverBg }}/>
   );
 }
 

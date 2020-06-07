@@ -371,19 +371,22 @@ const anyPiece = [
   'P', 'R', 'N', 'B', 'K', 'Q',
 ];
 
-const Droppable = ({ rank, file, onDrop, ...props })=>{
-  const [_, drop] = useDrop({
+const Droppable = ({ rank, file, hoverBg='red', onDrop, ...props })=>{
+  const [{ isOver }, drop] = useDrop({
     accept: anyPiece,
     drop: (dragItem)=> onDrop(dragItem, {rank, file}),
+    collect: (monitor)=> ({
+      isOver: monitor.isOver(),
+    }),
   });
 
   return (
-    <div ref={drop} {...props}/>
+    <div ref={drop} {...props} style={!isOver ? {} : { backgroundColor: hoverBg }}/>
   );
 }
 ```
 
-which, for now, will let any piece land anywhere any time.
+which, for now, will let any piece land anywhere any time. We will use the `isOver` variable to trigger the `onHoverDrag` effects later.
 
 this will change once we convert our board to a controlled component and program a `Game` or `Analysis` view to control it (in the next section).
 
@@ -907,7 +910,7 @@ import React from 'react';
 import { initPieces, calculateFEN } from './chess-util';
 
 describe('calculateFEN', ()=>{
-  it('calculates correctly', ()=>{
+  it('calculates correctly the initPieces', ()=>{
     const startingFEN =
       'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
     
@@ -993,24 +996,106 @@ we can solve the rest once we have test cases for them.
 I recommend at this point coding a solution that you understand and like. I've written mine how I prefer, but the value in this course is to help make sense of the world - so dig deep and find the way you want to be able to code this solution! As long as you write good test cases, you can be confident your utility is correct.
 
 
-now let's write more test cases:
+now let's write more test cases to cover every feature of FEN:
+
+(for submitted work, play a different game!)
 
 <sub>./src/chess-util.test.js</sub>
 ``` js
 //... e4
-'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1'
+  it('calculates correctly after e4, c5, Nf3', ()=>{
+    const e4FEN =
+      'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1';
+
+    let e4Pieces = JSON.parse(JSON.stringify(initPieces));
+    e4Pieces[1][4] = '';
+    e4Pieces[3][4] = 'P';
+    
+    const output = calculateFEN(e4Pieces, 'b', ['Pe2e4']);
+    
+    expect(output).toEqual(e4FEN);
+
 
 //... c5 (B20: Sicilian)
-'rnbqkbnr/pp1ppppp/8/2p5/4P3/8/PPPP1PPP/RNBQKBNR w KQkq c6 0 2'
+
+    const c5FEN =
+      'rnbqkbnr/pp1ppppp/8/2p5/4P3/8/PPPP1PPP/RNBQKBNR w KQkq c6 0 2';
+
+    let c5Pieces = copy(e4Pieces);
+    c5Pieces[6][2] = '';
+    c5Pieces[4][2] = 'p';
+    
+    const c5Output = calculateFEN(c5Pieces, 'w', ['Pe2e4', 'pc7c5']);
+    expect(c5Output).toEqual(c5FEN);
+
 
 //... Nf3 (main line)
-'rnbqkbnr/pp1ppppp/8/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2'
+
+    const nf3FEN =
+      'rnbqkbnr/pp1ppppp/8/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2';
+
+    let nf3Pieces = copy(c5Pieces);
+    nf3Pieces[0][6] = '';
+    nf3Pieces[2][5] = 'N';
+    
+    const nf3Output = calculateFEN(nf3Pieces, 'b', ['Pe2e4', 'pc7c5', 'Ng1f3']);
+    expect(nf3Output).toEqual(nf3FEN);
+
+```
+
+one more for halfmoves resetting on capture by not-pawn
+
+```js
+    const capFEN =
+      'rnb1kbnr/pp2pppp/8/2pq4/8/5N2/PPPP1PPP/RNBQKB1R w KQkq - 0 4';
+
+    let capPieces = copy(nf3Pieces);
+
+    // ... d5
+    capPieces[6][3] = '';
+    capPieces[4][3] = 'p';
+
+    // exd5
+    capPieces[3][4] = '';
+    capPieces[4][3] = 'P';
+
+    // ... Qxd5
+    capPieces[7][3] = '';
+    capPieces[4][3] = 'q';
+
+    const capOutput = calculateFEN(capPieces, 'w', [
+      'Pe2e4', 'pc7c5', 'Ng1f3', 'pd7d5', 'Pe4d5x', 'qd8d5x',
+    ]);
+    expect(capOutput).toEqual(capFEN);
+
+});
+```
+
+and another test for castling (castled, moved Rook, moved King, played without Rook)
+
+```js
+
+```
+
+
+now we can make our tests turn green!
+
+<sub>./src/chess-util.js</sub>
+```js
+//... en passant target
+
+
+//... moves count
+
+//... halfmoves count
+
+//... castling
+
 ```
 
 
 
-
-now we can ask for a list of legal moves
+having calculated the FEN, we can now ask for a list of legal moves from `chess.js`
 
 <sub>./src/chess-util.js</sub>
 ``` js
@@ -1018,16 +1103,34 @@ now we can ask for a list of legal moves
 ```
 
 
+and use them to block illegal moves
+
 <sub>./src/Game.js</sub>
 ``` jsx
 
 ```
 
-now we can fix the movements for castling
+and fix the movements for castling
 
 ``` jsx
 
 ```
+
+once our promotion widget works, we'll have a real chessboard!
+
+
+
+### Promotion Widget
+
+When a pawn attempts to land on the end of the board, we need to show the user a widget and wait for their choice.
+
+
+<sub>./src/Game.js</sub>
+```jsx
+//...
+```
+
+
 
 ### Displaying legal moves on the Board
 
@@ -1049,8 +1152,14 @@ and of course, when a user hover-drags a piece over a legal move, it should high
   <Board
     ...
     onDragHover={({ rank, file })=> {...}}
+    hoverBg={...}
     highlights={...} />
 ```
+
+
+
+
+
 
 
 
