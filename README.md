@@ -887,7 +887,7 @@ we're going to use `chess.js` to answer questions about our game, not to manage 
 Our goal in doing this is to maintain our own state to allow any feature, to write good code in a relevant module interface style, and to prepare for replacing `chess.js` with our own module in a later course.
 
 
-#### FEN
+### FEN
 
 to get chess.js to tell us what we want to know, we'll need to pass it the current board state. This can be achieved via the [FEN](https://en.wikipedia.org/wiki/Forsyth%E2%80%93Edwards_Notation) constructor API.
 
@@ -979,11 +979,11 @@ export const calculateFEN = (pieces, turn, moves)=> {
 
   const ept = '-';
 
-  const halfturns = 0;
+  const halfmoves = 0;
 
   const moveNumber = 1;
   
-  return `${fenPieces} ${turn[0]} ${privs} ${ept} ${halfturns} ${moveNumber}`;
+  return `${fenPieces} ${turn[0]} ${privs} ${ept} ${halfmoves} ${moveNumber}`;
 
 };
 
@@ -1152,19 +1152,78 @@ and another test for castling (castled, moved Rook, moved King, played without R
 
 now we can make our tests turn green!
 
+our first failing test is the "en passant target" field - when a pawn moves 2 squares from init, the 3rd or 7th rank square it crosses becomes for one turn the en passant target
+
+again, I'll suggest to you the student to solve these on your own in your own style - I'm providing solutions for completeness and any interest you may have in my style.
+
+
 <sub>./src/chess-util.js</sub>
 ```js
-//... en passant target
+//... en passant target (eg lastMove = 'Pc2c4')
 
-
-//... moves count
-
-//... halfmoves count
-
-//... castling
+  const lastMove = moves[moves.length-1];
+  const ept =
+    !lastMove ? '-' :
+    lastMove[0].toLowerCase() !== 'p' ? '-' :
+    Math.abs(lastMove[4] - lastMove[2]) !== 2 ? '-' :
+    (lastMove[1] + ( lastMove[2] === '2' ? 3 : 6 ));
 
 ```
 
+moveNumber only increments after black has moved
+
+```js
+//... moveNumber
+
+  const moveNumber = Math.ceil((moves.length + 1)/2);
+
+```
+
+and halfmove counter resets any time a pawn moves or a capture is made
+
+
+```js
+//... halfmoves count
+
+  const halfmoves = moves.reduce((hm, move)=> (
+    (move[0].toLowerCase() === 'p') || move.includes('x')
+  ) ? 0 : hm + 1, 0);
+
+```
+
+
+castling privilege entails and rook and king that haven't moved
+
+
+```js
+//... castling
+
+  // FEN doesn't work for chess960
+  
+  const privs = moves.reduce((privs, move)=> (
+    ['K', 'O'].includes(move[0]) ? privs.replace(/[KQ]/g, '') :
+    ['k', 'o'].includes(move[0]) ? privs.replace(/[kq]/g, '') :
+
+    move.slice(0,3) === 'Ra1' ? privs.replace('Q', ''):
+    move.slice(0,3) === 'Rh1' ? privs.replace('K', ''):
+    move.slice(0,3) === 'ra8' ? privs.replace('q', ''):
+    move.slice(0,3) === 'rh8' ? privs.replace('k', ''):
+
+    privs
+  ), (
+    (pieces[0][4] === 'K' && pieces[0][7] === 'R' ? 'K' : '') +
+    (pieces[0][4] === 'K' && pieces[0][0] === 'R' ? 'Q' : '') +
+    (pieces[7][4] === 'k' && pieces[7][7] === 'r' ? 'k' : '') +
+    (pieces[7][4] === 'k' && pieces[7][0] === 'r' ? 'q' : '')
+  )) || '-';
+
+```
+
+
+our tests should pass now! what a relief.
+
+
+### legal moves
 
 
 having calculated the FEN, we can now ask for a list of legal moves from `chess.js`

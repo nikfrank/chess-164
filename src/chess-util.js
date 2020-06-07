@@ -10,15 +10,42 @@ export const calculateFEN = (pieces, turn, moves)=> {
               row.slice(0, -1) + (1*row[row.length-1] + 1)
                 , '') + '/' + fen, '').slice(0, -1);
 
-  const privs = 'KQkq';
-
-  const ept = '-';
-
-  const halfturns = 0;
-
-  const moveNumber = 1;
+  // FEN doesn't work for chess960
   
-  return `${fenPieces} ${turn[0]} ${privs} ${ept} ${halfturns} ${moveNumber}`;
+  const privs = moves.reduce((privs, move)=> (
+    ['K', 'O'].includes(move[0]) ? privs.replace(/[KQ]/g, '') :
+    ['k', 'o'].includes(move[0]) ? privs.replace(/[kq]/g, '') :
+
+    move.slice(0,3) === 'Ra1' ? privs.replace('Q', ''):
+    move.slice(0,3) === 'Rh1' ? privs.replace('K', ''):
+    move.slice(0,3) === 'ra8' ? privs.replace('q', ''):
+    move.slice(0,3) === 'rh8' ? privs.replace('k', ''):
+
+    privs
+  ), (
+    (pieces[0][4] === 'K' && pieces[0][7] === 'R' ? 'K' : '') +
+    (pieces[0][4] === 'K' && pieces[0][0] === 'R' ? 'Q' : '') +
+    (pieces[7][4] === 'k' && pieces[7][7] === 'r' ? 'k' : '') +
+    (pieces[7][4] === 'k' && pieces[7][0] === 'r' ? 'q' : '')
+  )) || '-';
+
+  
+  const lastMove = moves[moves.length-1];
+  const ept =
+    !lastMove ? '-' :
+    lastMove[0].toLowerCase() !== 'p' ? '-' :
+    Math.abs(lastMove[4] - lastMove[2]) !== 2 ? '-' :
+    (lastMove[1] + ( lastMove[2] === '2' ? 3 : 6 ));
+
+  
+  const halfmoves = moves.reduce((hm, move)=> (
+    (move[0].toLowerCase() === 'p') || move.includes('x')
+  ) ? 0 : hm + 1, 0);
+
+  
+  const moveNumber = Math.ceil((moves.length + 1)/2);
+  
+  return `${fenPieces} ${turn[0]} ${privs} ${ept} ${halfmoves} ${moveNumber}`;
 };
 
 export const calculateLegalMoves = (pieces, turn, moves, moveFrom)=> {

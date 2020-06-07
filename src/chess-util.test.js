@@ -123,10 +123,10 @@ describe('calculateFEN', ()=>{
     // played without Rook
 
     const oddsFEN =
-      'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBN1 w Qkq - 0 1';
+      'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/1NBQKBNR w Kkq - 0 1';
     
     const oddsPieces = [
-      ['R', 'N', 'B', 'Q', 'K', 'B', 'N',  ''],
+      [ '', 'N', 'B', 'Q', 'K', 'B', 'N', 'R'],
       ['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'],
       [ '',  '',  '',  '',  '',  '',  '',  ''],
       [ '',  '',  '',  '',  '',  '',  '',  ''],
