@@ -1294,13 +1294,13 @@ we now see their format
 <sub>console</sub>
 ```json
 {
-  'color': 'w',
-  'from': 'g1',
-  'to': 'f3',
-  'flags': 'n',
-  'piece': 'n',
-  'san': 'Nf3'
-},
+  "color": "w",
+  "from": "g1",
+  "to": "f3",
+  "flags": "n",
+  "piece": "n",
+  "san": "Nf3"
+}
 ```
 
 so we can define our format with
