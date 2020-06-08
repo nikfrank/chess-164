@@ -1,5 +1,5 @@
 import React from 'react';
-import { initPieces, calculateFEN } from './chess-util';
+import { initPieces, calculateFEN, calculateLegalMoves } from './chess-util';
 
 const copy = t=> JSON.parse(JSON.stringify(t));
 
@@ -141,5 +141,25 @@ describe('calculateFEN', ()=>{
     const oddsOutput = calculateFEN(oddsPieces, 'w', oddsMoves);
     expect(oddsOutput).toEqual(oddsFEN);
     
+  });
+});
+
+
+describe('calculateLegalMoves', ()=>{
+  it('returns moves in our own format', ()=>{
+    const output = calculateLegalMoves(initPieces, 'w', []);
+
+    const legalMoves = [
+      'Pa2a3', 'Pa2a4', 'Pb2b3',
+      'Pb2b4', 'Pc2c3', 'Pc2c4',
+      'Pd2d3', 'Pd2d4', 'Pe2e3',
+      'Pe2e4', 'Pf2f3', 'Pf2f4',
+      'Pg2g3', 'Pg2g4', 'Ph2h3',
+      'Ph2h4', 'Nb1a3', 'Nb1c3',
+      'Ng1f3', 'Ng1h3'
+    ];
+
+
+    expect( output ).toEqual( legalMoves );
   });
 });

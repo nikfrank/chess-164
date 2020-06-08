@@ -1,4 +1,16 @@
-import Chess from 'chess.js';
+import C from 'chess.js';
+const Chess = C.Chess || C;
+
+export const initPieces = [
+  ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R'],
+  ['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'],
+  [ '',  '',  '',  '',  '',  '',  '',  ''],
+  [ '',  '',  '',  '',  '',  '',  '',  ''],
+  [ '',  '',  '',  '',  '',  '',  '',  ''],
+  [ '',  '',  '',  '',  '',  '',  '',  ''],
+  ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
+  ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
+];
 
 export const calculateFEN = (pieces, turn, moves)=> {
   const fenPieces =
@@ -49,18 +61,19 @@ export const calculateFEN = (pieces, turn, moves)=> {
 };
 
 export const calculateLegalMoves = (pieces, turn, moves, moveFrom)=> {
-  // convert pieces + turn + moves into FEN
+
+  const FEN = calculateFEN(pieces, turn, moves);
   
-  // new Chess(FEN).moves()
+  const allMoves = new Chess(FEN).moves({ verbose: true });
+
+  return allMoves.map(cjsMove=> (
+    cjsMove.flags === 'q' ? cjsMove.color === 'w' ? 'O-O-O' : 'o-o-o' :
+    cjsMove.flags === 'k' ? cjsMove.color === 'w' ? 'O-O' : 'o-o' :
+     
+    (cjsMove.color === 'w' ? cjsMove.piece.toUpperCase() : cjsMove.piece) +
+    cjsMove.from + cjsMove.to +
+    (cjsMove.flags.includes('c') ? 'x' : '') +
+    (cjsMove.promotion || '')
+  ));
 };
 
-export const initPieces = [
-  ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R'],
-  ['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'],
-  [ '',  '',  '',  '',  '',  '',  '',  ''],
-  [ '',  '',  '',  '',  '',  '',  '',  ''],
-  [ '',  '',  '',  '',  '',  '',  '',  ''],
-  [ '',  '',  '',  '',  '',  '',  '',  ''],
-  ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
-  ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
-];

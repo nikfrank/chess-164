@@ -773,7 +773,7 @@ We should put our chess utility functions into one file (chess-util.js) so that 
 ``` js
 // placeholder for now
 
-export const calculateLegalMoves = (pieces, turn, moves, moveFrom)=> [];
+export const calculateLegalMoves = (pieces, turn, moves)=> [];
 
 export const initPieces = [
   //...
@@ -843,12 +843,12 @@ const Game = ()=>{
   const [moves, setMoves] = useState([]);
 
   const onMove = useCallback(({ rank, file }, moveFrom=selected)=>{
-    const legalMoves = calculateLegalMoves(pieces, turn, moves, moveFrom);
+    const legalMoves = calculateLegalMoves(pieces, turn, moves);
     // if move is in list, continue : otherwise return
     // if move is O-O or O-O-O, recalculate pieces thusly
     // otherwise
     setPieces(pieces => {
-      pieces[rank][file] = moveFrom.piece;
+      pieces[rank][file] = moveFrom.piece; // unless promotion
       pieces[moveFrom.rank][moveFrom.file] = '';
 
       return [...pieces];
@@ -856,7 +856,7 @@ const Game = ()=>{
     setSelected({});
     setTurn(turn => turn === 'w' ? 'b' : 'w');
 
-    // push move as { start: {rank, file, piece}, end: {rank, file} }
+    // push move
     
   }, [setPieces, selected]);
 
@@ -872,9 +872,10 @@ for now, pseudocoding the solution will suffice.
 
 <sub>./src/chess-util.js</sub>
 ``` js
-import Chess from 'chess.js';
+import C from 'chess.js';
+const Chess = C.Chess || C;
 
-export const calculateLegalMoves = (pieces, turn, moves, moveFrom)=> {
+export const calculateLegalMoves = (pieces, turn, moves)=> {
   // convert pieces + turn + moves into FEN
   // new Chess(FEN).moves()
 };
@@ -886,6 +887,9 @@ we're going to use `chess.js` to answer questions about our game, not to manage 
 
 Our goal in doing this is to maintain our own state to allow any feature, to write good code in a relevant module interface style, and to prepare for replacing `chess.js` with our own module in a later course.
 
+`chess.js` is a bit ferkakte regarding imports - it imports itself differently in node and the browser, and since our tests run in node, we have to make a little shim to make sure it works in both places correctly.
+
+[see relevant github issue here](https://github.com/jhlywa/chess.js/issues/196)
 
 ### FEN
 
@@ -1234,40 +1238,204 @@ this was to improve the notation's use by program - standard notation is conveni
 
 ### legal moves
 
-
 having calculated the FEN, we can now ask for a list of legal moves from `chess.js`
+
+it will be useful in furthering our understanding of the `chess.js` library - and specifically its format for moves - to write a test for `calculateLegalMoves`.
+
+
+
+<sub>./src/chess-util.test.js</sub>
+``` js
+//...
+import { initPieces, calculateFEN, calculateLegalMoves } from './chess-util';
+
+//...
+
+
+describe('calculateLegalMoves', ()=>{
+  it('returns moves in our own format', ()=>{
+    const legalMoves = calculateLegalMoves(initPieces, 'w', []);
+
+    console.log(legalMoves);
+  });
+});
+```
+
 
 <sub>./src/chess-util.js</sub>
 ``` js
+//...
+
+export const calculateLegalMoves = (pieces, turn, moves)=> {
+
+  const FEN = calculateFEN(pieces, turn, moves);
+  
+  const allMoves = new Chess(FEN).moves();
+
+  console.log(allMoves);
+};
+```
+
+we'll see from the logs that `chess.js` is returning standard notation moves. We want more information than that, so digging a bit deeper into the examples on there github readme, [we find](https://github.com/jhlywa/chess.js/blob/master/README.md#moves-options-)
+
+```js
+  //...
+  const allMoves = new Chess(FEN).moves({ verbose: true });
+
+//...
+```
+
+we now see their format
+<sub>console</sub>
+```json
+{
+  'color': 'w',
+  'from': 'g1',
+  'to': 'f3',
+  'flags': 'n',
+  'piece': 'n',
+  'san': 'Nf3'
+},
+```
+
+so we can define our format with
+
+<sub>./src/chess-util.js</sub>
+```js
+  //...
+  return allMoves.map(cjsMove=> (
+    cjsMove.flags === 'q' ? cjsMove.color === 'w' ? 'O-O-O' : 'o-o-o' :
+    cjsMove.flags === 'k' ? cjsMove.color === 'w' ? 'O-O' : 'o-o' :
+     
+    (cjsMove.color === 'w' ? cjsMove.piece.toUpperCase() : cjsMove.piece) +
+    cjsMove.from + cjsMove.to +
+    (cjsMove.flags.includes('c') ? 'x' : '') +
+    (cjsMove.promotion || '')
+  ));
+
+};
+```
+
+where this mapping function constitutes a type conversion from `chess js verbose move {}` to our own string notation.
+
+now we can finish writing this test backwards, by taking a snapshot of the output and using that as the expectation
+
+
+<sub>./src/chess-util.test.js</sub>
+```js
+//...
+
+describe('calculateLegalMoves', ()=>{
+  it('returns moves in our own format', ()=>{
+    const output = calculateLegalMoves(initPieces, 'w', []);
+
+    const legalMoves = [
+      'Pa2a3', 'Pa2a4', 'Pb2b3',
+      'Pb2b4', 'Pc2c3', 'Pc2c4',
+      'Pd2d3', 'Pd2d4', 'Pe2e3',
+      'Pe2e4', 'Pf2f3', 'Pf2f4',
+      'Pg2g3', 'Pg2g4', 'Ph2h3',
+      'Ph2h4', 'Nb1a3', 'Nb1c3',
+      'Ng1f3', 'Ng1h3',
+    ];
+
+
+    expect( output ).toEqual( legalMoves );
+  });
+});
 
 ```
+
+we can worry about test coverage for calculating legal moves when we code it ourself!
+
+
+
+
+#### legal moves on the board
+
 
 we now have to keep track of moves in our notation to pass as a parameter
 
 <sub>./src/Game.js</sub>
 ```jsx
+    // in onMove function as noted before "push move"
+
+    const move = (
+      turn === 'w' ? moveFrom.piece.toUpperCase() : moveFrom.piece
+    ) + (
+      String.fromCharCode(moveFrom.file+97) + (moveFrom.rank+1)
+    ) + (
+      (String.fromCharCode(file+97)) + (rank+1)
+    ) + (pieces[rank][file] ? 'x' : '') + (
+      
+      // autopromote... should send JSX to portal and get callback first
+      moveFrom.piece.match(/p/i) && (!rank || rank === 7) ? 'q' : ''
+    );
+
+    setMoves([...moves, move]);
 
 ```
 
-and convert the moves back into our format from what `chess.js` gives us
-<sub>./src/chess-util.js</sub>
-```js
-
-```
 
 
-and use them to block illegal moves
+we can now use them to calculate `legalMoves` correctly, 
 
 <sub>./src/Game.js</sub>
 ``` jsx
+  //...
+  
+  const onMove = useCallback(({ rank, file }, moveFrom=selected)=>{
+    const legalMoves = calculateLegalMoves(pieces, turn, moves);
+    
+    const move = (
+      turn === 'w' ? moveFrom.piece.toUpperCase() : moveFrom.piece
+    ) + (
+      String.fromCharCode(moveFrom.file+97) + (moveFrom.rank+1)
+    ) + (
+      (String.fromCharCode(file+97)) + (rank+1)
+    ) + (pieces[rank][file] ? 'x' : '') + (
+      // autopromote... should send JSX to portal and get callback first
+      moveFrom.piece.match(/p/i) && (!rank || rank === 7) ? 'q' : ''
+    );
 
 ```
 
-and fix the movements for castling
+and block illegal moves
 
 ``` jsx
+    if( move === 'ke8g8' ) move = 'o-o';
+    if( move === 'ke8c8' ) move = 'o-o-o';
+    if( move === 'Ke1g1' ) move = 'O-O';
+    if( move === 'Ke1c1' ) move = 'O-O-O';
+
+    if( !legalMoves.includes(move) ) return;
+
+    //... setPieces etc.
+```
+
+
+now we can fix the movements for castling
+
+```jsx
+    setPieces(pieces => {
+      pieces[rank][file] = moveFrom.piece; // unless promotion
+      pieces[moveFrom.rank][moveFrom.file] = '';
+
+      if( move.includes('-') ){
+        if( file === 6 ){
+          pieces[rank][5] = pieces[rank][7];
+          pieces[rank][7] = '';
+        } else if( file === 2 ) {
+          pieces[rank][3] = pieces[rank][0];
+          pieces[rank][0] = '';
+        }
+      }
+        
+      return [...pieces];
+    });
 
 ```
+
 
 once our promotion widget works, we'll have a real chessboard!
 
@@ -1318,6 +1486,8 @@ and of course, when a user hover-drags a piece over a legal move, it should high
 
 - remove from board / add to board
 - promotion widget
+ - rendering the promotion widget through a portal
+ - using that portal to render conveniently on mobile
 
 - chess.js legalMoves
 - showing legalMoves on select / dragHover

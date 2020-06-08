@@ -11,22 +11,49 @@ const Game = ()=>{
   const [moves, setMoves] = useState([]);
 
   const onMove = useCallback(({ rank, file }, moveFrom=selected)=>{
-    const legalMoves = calculateLegalMoves(pieces, turn, moves, moveFrom);
-    // if move is in list, continue : otherwise return
-    // if move is O-O or O-O-O, recalculate pieces thusly
-    // otherwise
+    const legalMoves = calculateLegalMoves(pieces, turn, moves);
+    
+    let move = (
+      turn === 'w' ? moveFrom.piece.toUpperCase() : moveFrom.piece
+    ) + (
+      String.fromCharCode(moveFrom.file+97) + (moveFrom.rank+1)
+    ) + (
+      (String.fromCharCode(file+97)) + (rank+1)
+    ) + (pieces[rank][file] ? 'x' : '') + (
+      
+      // autopromote... should send JSX to portal and get callback first
+      moveFrom.piece.match(/p/i) && (!rank || rank === 7) ? 'q' : ''
+    );
+
+    if( move === 'ke8g8' ) move = 'o-o';
+    if( move === 'ke8c8' ) move = 'o-o-o';
+    if( move === 'Ke1g1' ) move = 'O-O';
+    if( move === 'Ke1c1' ) move = 'O-O-O';
+
+    if( !legalMoves.includes(move) ) return;
+    
     setPieces(pieces => {
-      pieces[rank][file] = moveFrom.piece;
+      pieces[rank][file] = moveFrom.piece; // unless promotion
       pieces[moveFrom.rank][moveFrom.file] = '';
 
+      if( move.includes('-') ){
+        if( file === 6 ){
+          pieces[rank][5] = pieces[rank][7];
+          pieces[rank][7] = '';
+        } else if( file === 2 ) {
+          pieces[rank][3] = pieces[rank][0];
+          pieces[rank][0] = '';
+        }
+      }
+        
       return [...pieces];
     });
     setSelected({});
     setTurn(turn => turn === 'w' ? 'b' : 'w');
 
-    // push move as { start: {rank, file, piece}, end: {rank, file} }
+    setMoves([...moves, move]);
     
-  }, [setPieces, selected]);
+  }, [setPieces, selected, moves, pieces, turn]);
   
   const onSelect = useCallback(({ rank, file, piece })=>{
     if(!selected.piece) setSelected({ rank, file, piece });
