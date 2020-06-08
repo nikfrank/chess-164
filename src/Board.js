@@ -57,7 +57,10 @@ const PiecePreview = () => {
   }} />
 };
 
-function Board({ pieces, onSelect, selected, onClick, onDragEnd }) {
+function Board({
+  pieces, onSelect, selected, onClick, onDragEnd,
+  promotion, promotionWidget,
+}) {
 
   const clickHandler = ({ rank, file, piece })=>{
     if( piece ) onSelect({ rank, file, piece });
@@ -88,13 +91,15 @@ function Board({ pieces, onSelect, selected, onClick, onDragEnd }) {
                 <Draggable rank={rank} file={file} type={piece}>
                   <Piece piece={piece}/>
                 </Draggable>
-
+                {promotion && promotion.rank === rank && promotion.file === file ? (
+                   promotionWidget
+                 ) : null}
               </Droppable>
             ))}
          </div>
        ))}
-         
-      <PiecePreview/>
+       
+       <PiecePreview/>
     </div>
   );
 }

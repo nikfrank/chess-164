@@ -1194,7 +1194,7 @@ and halfmove counter resets any time a pawn moves or a capture is made
 ```
 
 
-castling privilege entails and rook and king that haven't moved
+castling privilege entails and rook and king that haven't moved, and that the rook has never been captured (and then replaced)
 
 
 ```js
@@ -1210,6 +1210,11 @@ castling privilege entails and rook and king that haven't moved
     move.slice(0,3) === 'Rh1' ? privs.replace('K', '') :
     move.slice(0,3) === 'ra8' ? privs.replace('q', '') :
     move.slice(0,3) === 'rh8' ? privs.replace('k', '') :
+
+    move.slice(3,6) === 'a1x' ? privs.replace('Q', '') :
+    move.slice(3,6) === 'h1x' ? privs.replace('K', '') :
+    move.slice(3,6) === 'a8x' ? privs.replace('q', '') :
+    move.slice(3,6) === 'h8x' ? privs.replace('k', '') :
 
     privs
   ), (

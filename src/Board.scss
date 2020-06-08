@@ -17,7 +17,40 @@
       flex-grow: 1;
       background-color: #c2d280;
       min-height: 64px;
+      position: relative;
 
+      .promotion-widget {
+        display: flex;
+        position: absolute;
+        left: 0;
+        right: 0;
+        background: repeating-linear-gradient(
+                        45deg,
+                        #bccd3080,
+                        #bccd3080 10px,
+                        #fff5 10px,
+                        #fff5 20px
+                      );
+        
+        &.w {
+          top: 0;
+          bottom: -300%;
+          flex-direction: column;
+        }
+
+        &.b {
+          top: 0;
+          bottom: -300%;
+          transform: translateY(-75%);
+          z-index: 1000;
+          flex-direction: column-reverse;
+        }
+        
+        svg {
+          transform: scale(0.625, 0.625) translate(25%, 25%);
+        }
+      }
+      
       &.selected {
         background-color: #697140;
       }
