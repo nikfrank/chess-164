@@ -16,12 +16,12 @@
     .square {
       flex-grow: 1;
       background-color: #c2d280;
-      min-height: 64px;
       position: relative;
 
       .promotion-widget {
         display: flex;
         position: absolute;
+        z-index: 1000;
         left: 0;
         right: 0;
         background: repeating-linear-gradient(
@@ -42,7 +42,6 @@
           top: 0;
           bottom: -300%;
           transform: translateY(-75%);
-          z-index: 1000;
           flex-direction: column-reverse;
         }
         

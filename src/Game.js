@@ -4,6 +4,22 @@ import Board from './Board';
 import { initPieces, calculateLegalMoves } from './chess-util';
 import Piece from 'react-chess-pieces';
 
+const PromotionWidget = ({ turn, onPromote })=>{
+  const promote = piece => e=> {
+    e.stopPropagation();
+    onPromote(piece);
+  };
+  
+  return (
+    <div className={'promotion-widget '+turn}>
+      <div onClick={promote('q')}><Piece piece={turn === 'w' ? 'Q' : 'q'} /></div>
+      <div onClick={promote('r')}><Piece piece={turn === 'w' ? 'R' : 'r'} /></div>
+      <div onClick={promote('n')}><Piece piece={turn === 'w' ? 'N' : 'n'} /></div>
+      <div onClick={promote('b')}><Piece piece={turn === 'w' ? 'B' : 'b'} /></div>
+    </div>
+  );
+};
+
 const Game = ()=>{
   const [pieces, setPieces] = useState(initPieces);
   const [selected, setSelected] = useState({});
@@ -33,7 +49,7 @@ const Game = ()=>{
     if( !legalMoves.includes(move) ) return;
     
     setPieces(pieces => {
-      pieces[rank][file] = moveFrom.piece; // unless promotion
+      pieces[rank][file] = moveFrom.piece;
       pieces[moveFrom.rank][moveFrom.file] = '';
 
       if( move.includes('-') ){
@@ -56,13 +72,12 @@ const Game = ()=>{
       
     } else setPromotion({ rank, file, move });
     
-  }, [setPieces, selected, moves, pieces, turn, promotion]);
+  }, [setPieces, selected, moves, pieces, turn]);
 
 
-  const promote = useCallback((piece, e)=> {
-    e.stopPropagation();
-    
+  const onPromote = useCallback((piece)=> {
     if(!promotion) return;
+    
     setPieces(pieces => {
       pieces[promotion.rank][promotion.file] =
         turn === 'w' ? piece.toUpperCase() : piece.toLowerCase();
@@ -108,22 +123,9 @@ const Game = ()=>{
         onRightClick={onRightClick}
         promotion={promotion}
         promotionWidget={
-          promotion ? (
-            <div className={'promotion-widget '+turn}>
-              <div onClick={(e)=> promote('q', e)}>
-                <Piece piece={turn === 'w' ? 'Q' : 'q'} />
-              </div>
-              <div onClick={(e)=> promote('r', e)}>
-                <Piece piece={turn === 'w' ? 'R' : 'r'} />
-              </div>
-              <div onClick={(e)=> promote('n', e)}>
-                <Piece piece={turn === 'w' ? 'N' : 'n'} />
-              </div>
-              <div onClick={(e)=> promote('b', e)}>
-                <Piece piece={turn === 'w' ? 'B' : 'b'} />
-              </div>
-            </div>
-          ) : null}
+          promotion && (
+            <PromotionWidget turn={turn} onPromote={onPromote}/>
+          )}
     />
   );
 };

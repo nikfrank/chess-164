@@ -1399,7 +1399,7 @@ we can now use them to calculate `legalMoves` correctly,
     ) + (
       (String.fromCharCode(file+97)) + (rank+1)
     ) + (pieces[rank][file] ? 'x' : '') + (
-      // autopromote... should send JSX to portal and get callback first
+      // only need to check if promotion is legal. underpromotion handled elsewhere.
       moveFrom.piece.match(/p/i) && (!rank || rank === 7) ? 'q' : ''
     );
 
@@ -1423,7 +1423,7 @@ now we can fix the movements for castling
 
 ```jsx
     setPieces(pieces => {
-      pieces[rank][file] = moveFrom.piece; // unless promotion
+      pieces[rank][file] = moveFrom.piece;
       pieces[moveFrom.rank][moveFrom.file] = '';
 
       if( move.includes('-') ){
@@ -1448,13 +1448,182 @@ once our promotion widget works, we'll have a real chessboard!
 
 ### Promotion Widget
 
-When a pawn attempts to land on the end of the board, we need to show the user a widget and wait for their choice. They may choose to cancel, or promote to N / B / R / Q
+When a pawn attempts to land on the end of the board, we need to show the user a widget and wait for their choice. They may choose to promote to Q, or underpromote to N / B / R.
 
 
 <sub>./src/Game.js</sub>
 ```jsx
+  //...
+  
+  const [promotion, setPromotion] = useState(null);
+
+  const onMove = useCallback(({ rank, file }, moveFrom=selected)=>{
+    const legalMoves = calculateLegalMoves(pieces, turn, moves);
+
+    let promoting = moveFrom.piece.match(/p/i) && (!rank || rank === 7);
+
+    //...
+
+    setPieces(pieces => {
+      //...
+    });
+    setSelected({});
+
+    if(!promoting){
+      setTurn(turn => turn === 'w' ? 'b' : 'w');
+      setMoves([...moves, move]);
+      
+    } else setPromotion({ rank, file, move });
+
+```
+
+now we allow the pawn to move to the last rank, but we do not have the turn finish
+
+instead, we will use the `promotion` state variable to trigger a widget be rendered on the `Board`
+
+
+```jsx
+  //...
+
+  return (
+    <Board
+        pieces={pieces}
+        onSelect={onSelect}
+        selected={selected}
+        onDragStart={onDragStart}
+        onDragHover={onDragHover}
+        onDragEnd={onDragEnd}
+        onClick={onClick}
+        onRightClick={onRightClick}
+        promotion={promotion}
+        promotionWidget={
+          promotion && (
+            <PromotionWidget turn={turn} onPromote={onPromote}/>
+          )}
+    />
+  );
+```
+
+and we'll need a `PromotionWidget` component of course, and later - our `onPromote` function
+
+```jsx
+//...
+
+import Piece from 'react-chess-pieces';
+
+const PromotionWidget = ({ turn, onPromote })=>{
+  const promote = piece => e=> {
+    e.stopPropagation();
+    onPromote(piece);
+  };
+  
+  return (
+    <div className={'promotion-widget '+turn}>
+      <div onClick={promote('q')}><Piece piece={turn === 'w' ? 'Q' : 'q'} /></div>
+      <div onClick={promote('r')}><Piece piece={turn === 'w' ? 'R' : 'r'} /></div>
+      <div onClick={promote('n')}><Piece piece={turn === 'w' ? 'N' : 'n'} /></div>
+      <div onClick={promote('b')}><Piece piece={turn === 'w' ? 'B' : 'b'} /></div>
+    </div>
+  );
+};
+
 //...
 ```
+
+which we'll need to render and style from the `Board`
+
+<sub>./src/Board.js</sub>
+```jsx
+//...
+
+function Board({
+  pieces, onSelect, selected, onClick, onDragEnd,
+  promotion, promotionWidget,
+}) {
+
+  //...
+
+              <Droppable ... >
+                
+                <Draggable ... />
+                
+                {promotion && promotion.rank === rank && promotion.file === file ? (
+                   promotionWidget
+                 ) : null}
+              </Droppable>
+
+```
+
+we can draw the widget on top of the board, while indicating clearly it is something different, while also not blocking the view of pieces (that may factor into the underpromotion choice!)
+
+
+<sub>./src/Board.scss</sub>
+```scss
+//...
+
+    .square {
+      flex-grow: 1;
+      background-color: #c2d280;
+      position: relative;
+
+      .promotion-widget {
+        display: flex;
+        position: absolute;
+        z-index: 1000;
+        left: 0;
+        right: 0;
+        background: repeating-linear-gradient(
+                        45deg,
+                        #bccd3080,
+                        #bccd3080 10px,
+                        #fff5 10px,
+                        #fff5 20px
+                      );
+        
+        &.w {
+          top: 0;
+          bottom: -300%;
+          flex-direction: column;
+        }
+
+        &.b {
+          top: 0;
+          bottom: -300%;
+          transform: translateY(-75%);
+          flex-direction: column-reverse;
+        }
+        
+        svg {
+          transform: scale(0.625, 0.625) translate(25%, 25%);
+        }
+      }
+
+//...
+```
+
+
+back in the `Game`, we still need to write our `onPromote` callback function
+
+
+```jsx
+  const onPromote = useCallback((piece)=> {    
+    if(!promotion) return;
+    
+    setPieces(pieces => {
+      pieces[promotion.rank][promotion.file] =
+        turn === 'w' ? piece.toUpperCase() : piece.toLowerCase();
+
+      return [...pieces];
+    });
+    setPromotion(null);
+    setTurn(turn => turn === 'w' ? 'b' : 'w');
+    setSelected({});
+    setMoves(moves => [...moves, promotion.move.slice(0, -1) + piece.toLowerCase()]);
+  }, [promotion, turn]);
+
+```
+
+which completes the move, pushes it to the list of moves, and ends the turn.
 
 
 
