@@ -1291,6 +1291,7 @@ we'll see from the logs that `chess.js` is returning standard notation moves. We
 ```
 
 we now see their format
+
 <sub>console</sub>
 ```json
 {
