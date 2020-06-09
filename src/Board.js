@@ -57,9 +57,24 @@ const PiecePreview = () => {
   }} />
 };
 
+const MarkerSVGS = {
+  '.': (
+    <svg viewBox='0 0 10 10' className='marker'>
+      <circle cx={5} cy={5} r={2} fill='#0008' stroke='white' strokeWidth={0.25}/>
+    </svg>
+  ),
+  'x': (
+    <svg viewBox='0 0 16 16' className='marker'>
+      <polygon points='4,6 6,4 8,6 10,4 12,6 10,8 12,10 10,12 8,10 6,12 4,10 6,8 4,6'
+               fill='#5008' stroke='white' strokeWidth={0.25}/>
+    </svg>
+  ),
+};
+
+
 function Board({
-  pieces, onSelect, selected, onClick, onDragEnd,
-  promotion, promotionWidget,
+  pieces, onSelect, selected, onClick, onDragEnd, onDragStart,
+  promotion, promotionWidget, markers,
 }) {
 
   const clickHandler = ({ rank, file, piece })=>{
@@ -68,7 +83,7 @@ function Board({
   };
   
   const startDragMove = (({ rank, file, piece })=>{
-    console.log(piece, String.fromCharCode(file+97), rank+1);
+    if( piece ) onDragStart({ rank, file, piece });
   });
   
   return (
@@ -91,6 +106,9 @@ function Board({
                 <Draggable rank={rank} file={file} type={piece}>
                   <Piece piece={piece}/>
                 </Draggable>
+
+                {MarkerSVGS[ markers[String.fromCharCode(file+97) + (rank+1)] ]}
+                
                 {promotion && promotion.rank === rank && promotion.file === file ? (
                    promotionWidget
                  ) : null}

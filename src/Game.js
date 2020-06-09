@@ -25,10 +25,11 @@ const Game = ()=>{
   const [selected, setSelected] = useState({});
   const [turn, setTurn] = useState('w');
   const [moves, setMoves] = useState([]);
-
   const [promotion, setPromotion] = useState(null);
+  const [legalMovesDisplay, setLegalMovesDisplay] = useState([]);
   
   const onMove = useCallback(({ rank, file }, moveFrom=selected)=>{
+
     const legalMoves = calculateLegalMoves(pieces, turn, moves);
 
     let promoting = moveFrom.piece.match(/p/i) && (!rank || rank === 7);
@@ -47,23 +48,23 @@ const Game = ()=>{
     if( move === 'Ke1c1' ) move = 'O-O-O';
       
     if( !legalMoves.includes(move) ) return;
-    
-    setPieces(pieces => {
-      pieces[rank][file] = moveFrom.piece;
-      pieces[moveFrom.rank][moveFrom.file] = '';
+    setLegalMovesDisplay([]);
 
-      if( move.includes('-') ){
-        if( file === 6 ){
-          pieces[rank][5] = pieces[rank][7];
-          pieces[rank][7] = '';
-        } else if( file === 2 ) {
-          pieces[rank][3] = pieces[rank][0];
-          pieces[rank][0] = '';
-        }
+    const nextPieces = JSON.parse(JSON.stringify(pieces));
+
+    nextPieces[rank][file] = moveFrom.piece;
+    nextPieces[moveFrom.rank][moveFrom.file] = '';
+    if( move.includes('-') ){
+      if( file === 6 ){
+        nextPieces[rank][5] = nextPieces[rank][7];
+        nextPieces[rank][7] = '';
+      } else if( file === 2 ) {
+        nextPieces[rank][3] = nextPieces[rank][0];
+        nextPieces[rank][0] = '';
       }
-        
-      return [...pieces];
-    });
+    }
+    setPieces(nextPieces);
+
     setSelected({});
 
     if(!promoting){
@@ -72,7 +73,7 @@ const Game = ()=>{
       
     } else setPromotion({ rank, file, move });
     
-  }, [setPieces, selected, moves, pieces, turn]);
+  }, [selected, moves, pieces, turn]);
 
 
   const onPromote = useCallback((piece)=> {
@@ -89,13 +90,36 @@ const Game = ()=>{
     setSelected({});
     setMoves(moves => [...moves, promotion.move.slice(0, -1) + piece.toLowerCase()]);
   }, [promotion, turn]);
+
+  const showLegalMoves = useCallback(({ rank, file, piece })=>{
+    const prefix = piece + String.fromCharCode(file+97) + (rank+1);
+
+    setLegalMovesDisplay(
+      calculateLegalMoves(pieces, turn, moves)
+        .map(move => (
+          move === 'O-O' ? 'Ke1g1' :
+          move === 'O-O-O' ? 'Ke1c1' :
+          move === 'o-o' ? 'ke8g8' :
+          move === 'o-o-o' ? 'ke8c8' :
+          move
+        )).filter(move => move.indexOf(prefix) === 0)
+        .map(move => move.slice(3) )
+        .reduce((moves, move)=> ({ ...moves, [move.slice(0,2)]: move.includes('x') ? 'x' : '.' }), {})
+    );
+  }, [pieces, turn, moves]);
   
   const onSelect = useCallback(({ rank, file, piece })=>{
-    if(!selected.piece) setSelected({ rank, file, piece });
-    else if( rank === selected.rank && file === selected.file )
+    if(!selected.piece) {
+      setSelected({ rank, file, piece });
+
+      showLegalMoves({ rank, file, piece })
+      
+    } else if( rank === selected.rank && file === selected.file ) {
       setSelected({});
-    else onMove({ rank, file }); // capture?
-  }, [selected, onMove]);
+      setLegalMovesDisplay([]);
+      
+    } else onMove({ rank, file });
+  }, [selected, onMove, showLegalMoves]);
 
   const onClick = ({ rank, file })=> {
     if( selected.piece ) onMove({ rank, file });
@@ -107,13 +131,14 @@ const Game = ()=>{
     onMove(end, { ...start, piece: start.type });
   };
   
-  const onDragStart = ({ rank, file, piece })=> console.log('drag start');
+  const onDragStart = showLegalMoves;
   const onDragHover = ({ start, hovering })=> console.log('drag hover');
   const onRightClick = ({ rank, file, piece })=> console.log('right click');
-  
+
   return (
     <Board
         pieces={pieces}
+        markers={legalMovesDisplay}
         onSelect={onSelect}
         selected={selected}
         onDragStart={onDragStart}
