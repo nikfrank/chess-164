@@ -26,10 +26,9 @@ const Game = ()=>{
   const [turn, setTurn] = useState('w');
   const [moves, setMoves] = useState([]);
   const [promotion, setPromotion] = useState(null);
-  const [legalMovesDisplay, setLegalMovesDisplay] = useState([]);
+  const [legalMovesDisplay, setLegalMovesDisplay] = useState({});
   
   const onMove = useCallback(({ rank, file }, moveFrom=selected)=>{
-
     const legalMoves = calculateLegalMoves(pieces, turn, moves);
 
     let promoting = moveFrom.piece.match(/p/i) && (!rank || rank === 7);
@@ -48,7 +47,7 @@ const Game = ()=>{
     if( move === 'Ke1c1' ) move = 'O-O-O';
       
     if( !legalMoves.includes(move) ) return;
-    setLegalMovesDisplay([]);
+    setLegalMovesDisplay({});
 
     const nextPieces = JSON.parse(JSON.stringify(pieces));
 
@@ -78,13 +77,13 @@ const Game = ()=>{
 
   const onPromote = useCallback((piece)=> {
     if(!promotion) return;
-    
-    setPieces(pieces => {
-      pieces[promotion.rank][promotion.file] =
-        turn === 'w' ? piece.toUpperCase() : piece.toLowerCase();
 
-      return [...pieces];
-    });
+    const nextPieces = JSON.parse(JSON.stringify(pieces));
+    nextPieces[promotion.rank][promotion.file] =
+      turn === 'w' ? piece.toUpperCase() : piece.toLowerCase();
+
+    setPieces(nextPieces);
+      
     setPromotion(null);
     setTurn(turn => turn === 'w' ? 'b' : 'w');
     setSelected({});
@@ -104,19 +103,20 @@ const Game = ()=>{
           move
         )).filter(move => move.indexOf(prefix) === 0)
         .map(move => move.slice(3) )
-        .reduce((moves, move)=> ({ ...moves, [move.slice(0,2)]: move.includes('x') ? 'x' : '.' }), {})
+        .reduce((moves, move)=> ({
+          ...moves, [move.slice(0,2)]: move.includes('x') ? 'x' : '.',
+        }), {})
     );
   }, [pieces, turn, moves]);
   
   const onSelect = useCallback(({ rank, file, piece })=>{
     if(!selected.piece) {
       setSelected({ rank, file, piece });
-
       showLegalMoves({ rank, file, piece })
       
     } else if( rank === selected.rank && file === selected.file ) {
       setSelected({});
-      setLegalMovesDisplay([]);
+      setLegalMovesDisplay({});
       
     } else onMove({ rank, file });
   }, [selected, onMove, showLegalMoves]);

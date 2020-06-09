@@ -271,12 +271,13 @@ and we need to move the piece when the second click occurs
       setSelected({});
     
     else {
-      setPieces(pieces=> {
-        pieces[rank][file] = selected.piece;
-        pieces[selected.rank][selected.file] = '';
+      const nextPieces = JSON.parse(JSON.stringify(pieces));
+      
+      nextPieces[rank][file] = selected.piece;
+      nextPieces[selected.rank][selected.file] = '';
+    
+      setPieces(nextPieces);
 
-        return [...pieces];
-      });
       setSelected({});
     }
     
@@ -553,21 +554,12 @@ and (for now) removing the state updates
 ``` diff
 //... select
 
--      setPieces(pieces=> {
--        pieces[rank][file] = selected.piece;
--        pieces[selected.rank][selected.file] = '';
--
--        return [...pieces];
--      });
-
-//... endDragMove
-
--    setPieces(pieces=> {
--      pieces[end.rank][end.file] = start.type;
--      pieces[start.rank][start.file] = '';
--
--      return [...pieces];
--    });
+-      const nextPieces = JSON.parse(JSON.stringify(pieces));
+-      
+-      nextPieces[rank][file] = selected.piece;
+-      nextPieces[selected.rank][selected.file] = '';
+-    
+-      setPieces(nextPieces);
 
 //...
 ```
@@ -624,12 +616,12 @@ now we can refactor our selection and movement logic from `Board` into `Game`
 -      setSelected({});
 -
 -    else {
--      setPieces(pieces=> {
--        pieces[rank][file] = selected.piece;
--        pieces[selected.rank][selected.file] = '';
+-      const nextPieces = JSON.parse(JSON.stringify(pieces));
 -
--        return [...pieces];
--      });
+-      nextPieces[rank][file] = selected.piece;
+-      nextPieces[selected.rank][selected.file] = '';
+-      setPieces(nextPieces);
+-
 -      setSelected({});
 -    }
 -
@@ -683,12 +675,12 @@ const Game = ()=>{
   const [selected, setSelected] = useState({});
 
   const onMove = useCallback(({ rank, file })=>{
-    setPieces(pieces => {
-      pieces[rank][file] = selected.piece;
-      pieces[selected.rank][selected.file] = '';
+    const nextPieces = JSON.parse(JSON.stringify(pieces));
 
-      return [...pieces];
-    });
+    nextPieces[rank][file] = selected.piece;
+    nextPieces[selected.rank][selected.file] = '';
+    setPieces(nextPieces);
+
     setSelected({});
   }, [setPieces, selected]);
   
@@ -732,12 +724,12 @@ with a bit of shimming to deal with the `react-dnd` behaviour, and a refactor to
 //...
 
   const onMove = useCallback(({ rank, file }, moveFrom=selected)=>{
-    setPieces(pieces => {
-      pieces[rank][file] = moveFrom.piece;
-      pieces[moveFrom.rank][moveFrom.file] = '';
+    const nextPieces = JSON.parse(JSON.stringify(pieces));
 
-      return [...pieces];
-    });
+    nextPieces[rank][file] = moveFrom.piece;
+    nextPieces[moveFrom.rank][moveFrom.file] = '';
+    setPieces(nextPieces);
+        
     setSelected({});
 
   }, [setPieces, seleted]);
@@ -847,12 +839,13 @@ const Game = ()=>{
     // if move is in list, continue : otherwise return
     // if move is O-O or O-O-O, recalculate pieces thusly
     // otherwise
-    setPieces(pieces => {
-      pieces[rank][file] = moveFrom.piece; // unless promotion
-      pieces[moveFrom.rank][moveFrom.file] = '';
+    const nextPieces = JSON.parse(JSON.stringify(pieces));
 
-      return [...pieces];
-    });
+    nextPieces[rank][file] = moveFrom.piece;
+    nextPieces[moveFrom.rank][moveFrom.file] = '';
+    
+    setPieces(nextPieces);
+    
     setSelected({});
     setTurn(turn => turn === 'w' ? 'b' : 'w');
 
@@ -1423,23 +1416,21 @@ and block illegal moves
 now we can fix the movements for castling
 
 ```jsx
-    setPieces(pieces => {
-      pieces[rank][file] = moveFrom.piece;
-      pieces[moveFrom.rank][moveFrom.file] = '';
+    const nextPieces = JSON.parse(JSON.stringify(pieces));
 
-      if( move.includes('-') ){
-        if( file === 6 ){
-          pieces[rank][5] = pieces[rank][7];
-          pieces[rank][7] = '';
-        } else if( file === 2 ) {
-          pieces[rank][3] = pieces[rank][0];
-          pieces[rank][0] = '';
-        }
+    nextPieces[rank][file] = moveFrom.piece;
+    nextPieces[moveFrom.rank][moveFrom.file] = '';
+    
+    if( move.includes('-') ){
+      if( file === 6 ){
+        nextPieces[rank][5] = nextPieces[rank][7];
+        nextPieces[rank][7] = '';
+      } else if( file === 2 ) {
+        nextPieces[rank][3] = nextPieces[rank][0];
+        nextPieces[rank][0] = '';
       }
-        
-      return [...pieces];
-    });
-
+    }
+    setPieces(nextPieces);
 ```
 
 
@@ -1465,9 +1456,7 @@ When a pawn attempts to land on the end of the board, we need to show the user a
 
     //...
 
-    setPieces(pieces => {
-      //...
-    });
+    setPieces(...);
     setSelected({});
 
     if(!promoting){
@@ -1610,12 +1599,12 @@ back in the `Game`, we still need to write our `onPromote` callback function
   const onPromote = useCallback((piece)=> {    
     if(!promotion) return;
     
-    setPieces(pieces => {
-      pieces[promotion.rank][promotion.file] =
-        turn === 'w' ? piece.toUpperCase() : piece.toLowerCase();
+    const nextPieces = JSON.parse(JSON.stringify(pieces));
+    nextPieces[promotion.rank][promotion.file] =
+      turn === 'w' ? piece.toUpperCase() : piece.toLowerCase();
 
-      return [...pieces];
-    });
+    setPieces(nextPieces);
+
     setPromotion(null);
     setTurn(turn => turn === 'w' ? 'b' : 'w');
     setSelected({});
@@ -1633,28 +1622,144 @@ which completes the move, pushes it to the list of moves, and ends the turn.
 now that we can calculate the legal moves whenever we want, we should show the user legal moves for a piece when it is selected or dragged.
 
 
+first let's make a state variable to store the legalMoves we'll be displaying to the user
+
+<sub>./src/Game.js</sub>
+```jsx
+//...
+
+const Game = ()=>{
+  //...
+  const [legalMovesDisplay, setLegalMovesDisplay] = useState([]);
+
+  //...
+```
+
+and a function to trigger the calculation
+
+```jsx
+  //...
+
+  const showLegalMoves = useCallback(({ rank, file, piece })=>{
+    const prefix = piece + String.fromCharCode(file+97) + (rank+1);
+
+    setLegalMovesDisplay(
+      calculateLegalMoves(pieces, turn, moves)
+        .map(move => (
+          move === 'O-O' ? 'Ke1g1' :
+          move === 'O-O-O' ? 'Ke1c1' :
+          move === 'o-o' ? 'ke8g8' :
+          move === 'o-o-o' ? 'ke8c8' :
+          move
+        )).filter(move => move.indexOf(prefix) === 0)
+        .map(move => move.slice(3) )
+        .reduce((moves, move)=> ({
+          ...moves, [move.slice(0,2)]: move.includes('x') ? 'x' : '.',
+        }), {})
+    );
+  }, [pieces, turn, moves]);
+
+  //...
+```
+
+here, we're receiving the moves in our notation, so we have to convert castling back to an naive King move to avoid fooling the filter
+
+also note our output format is an index JSON with structure `{ [move]: marker }`, and with null value `{}`
+
+`move` is like 'e4' and marker is some string which will represent which SVG we wish to draw (this is an expandable format)
+
+
+now we should call this function when the user selects a piece or starts dragging
+
+
+```jsx
+  //...
+
+  const onSelect = useCallback(({ rank, file, piece })=>{
+    if(!selected.piece) {
+      setSelected({ rank, file, piece });
+      showLegalMoves({ rank, file, piece })
+      
+    } else if( rank === selected.rank && file === selected.file ) {
+      setSelected({});
+      setLegalMovesDisplay({});
+      
+    } else onMove({ rank, file });
+  }, [selected, onMove, showLegalMoves]);
+
+  //...
+
+  const onDragStart = showLegalMoves;
+
+```
+
 ``` jsx
-  <Board
-    ...
-    onDragStart={...}
-    onSelect={...}
-    markers={...} />
+  return (
+    <Board
+        pieces={pieces}
+        markers={legalMovesDisplay}
+        onSelect={onSelect}
+        selected={selected}
+        onDragStart={onDragStart}
+        onDragHover={onDragHover}
+        onDragEnd={onDragEnd}
+        onClick={onClick}
+        onRightClick={onRightClick}
+        promotion={promotion}
+        promotionWidget={
+          promotion && (
+            <PromotionWidget turn={turn} onPromote={onPromote}/>
+          )}
+    />
+  );
+```
+
+now, inside the `Board`, we'll have to render these markers
+
+<sub>./src/Board.js</sub>
+```jsx
+const MarkerSVGS = {
+  '.': (
+    <svg viewBox='0 0 10 10' className='marker'>
+      <circle cx={5} cy={5} r={2} fill='#0008' stroke='white' strokeWidth={0.25}/>
+    </svg>
+  ),
+  'x': (
+    <svg viewBox='0 0 16 16' className='marker'>
+      <polygon points='4,6 6,4 8,6 10,4 12,6 10,8 12,10 10,12 8,10 6,12 4,10 6,8 4,6'
+               fill='#5008' stroke='white' strokeWidth={0.25}/>
+    </svg>
+  ),
+};
+
+//...
+
+                
+                <Draggable rank={rank} file={file} type={piece}>
+                  <Piece piece={piece}/>
+                </Draggable>
+
+                {MarkerSVGS[ markers[String.fromCharCode(file+97) + (rank+1)] ]}
+
+//...
 ```
 
 
-and of course, when a user hover-drags a piece over a legal move, it should highlight
+<sub>./src/Board.scss</sub>
+```scss
+      svg {
+        float: left;
 
-``` jsx
-  <Board
-    ...
-    onDragHover={({ rank, file })=> {...}}
-    hoverBg={...}
-    highlights={...} />
+        &.marker {
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+        }
+      }
+
 ```
-
-
-
-
 
 
 
