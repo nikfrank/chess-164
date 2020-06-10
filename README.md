@@ -737,8 +737,10 @@ with a bit of shimming to deal with the `react-dnd` behaviour, and a refactor to
   //...
 
   const onDragEnd = (start, end)=> {
-    if( start.rank === end.rank && start.file === end.file ) return;
-    onMove(end, { ...start, piece: start.type });
+    if( start.rank === end.rank && start.file === end.file )
+      onSelect({ ...start, piece: start.type });
+    else
+      onMove(end, { ...start, piece: start.type });
   };
 
 //...
@@ -1609,7 +1611,7 @@ back in the `Game`, we still need to write our `onPromote` callback function
     setTurn(turn => turn === 'w' ? 'b' : 'w');
     setSelected({});
     setMoves(moves => [...moves, promotion.move.slice(0, -1) + piece.toLowerCase()]);
-  }, [promotion, turn]);
+  }, [promotion, turn, pieces]);
 
 ```
 
@@ -1764,28 +1766,111 @@ const MarkerSVGS = {
 
 
 
-- remove from board / add to board
-- promotion widget
- - rendering the promotion widget through a portal
- - using that portal to render conveniently on mobile
 
-- chess.js legalMoves
-- showing legalMoves on select / dragHover
-- enforcing legal moves
-
+remaining ideas for front end:
 
 - check / draw / stalemate / checkmate / illegal
-
+- sounds
 - highlight previous move
 - draw / remove arrows
 
+- analysis board: connect to engine (api?), add / remove pieces, show eval / moves
+- opening trainer: compile ECO moves and evaluations, draw arrows
+- endgame trainer: connect to engine (api?), generate legal playable endgames
 
-refactors
+- improve drag and drop?
+- more testing, automate testing on mobile?
+- automate turning PGN into gif? FEN -> image api?
 
 
-We should make `Draggable` and `Droppable` reusable by putting them in their own file (we'll need `Draggable` again for promotion widget etc)
+
+### multiplayer online
+
+You'll need a Google account to follow along here, as we'll be building a firebase application to share the game state between two users.
+
+[check out the firebase console](https://console.firebase.google.com/)
+
+create app
+
+authentication
+
+[create oauth github app](https://developer.github.com/apps/building-oauth-apps/creating-an-oauth-app/)
+
+copy over clientId, secret into firebase console
+
+firebase will allow localhost requests
+
+`$ yarn add firebase`
+
+adding credentials with .env in cra
+
+find the credentials and copy paste
+
+`$ touch src/network.js`
 
 
+<sub>./src/network.js</sub>
+```js
+import firebase from 'firebase/app';
+import 'firebase/auth';
+import 'firebase/database';
+import 'firebase/analytics';
+
+const firebaseConfig = {
+  //... copypasta
+};
+
+// Initialize Firebase
+firebase.initializeApp(firebaseConfig);
+firebase.analytics();
+
+export const auth = firebase.auth;
+export const db = firebase.database();
+
+
+export const loginWithGithub = ()=>
+  auth().signInWithPopup( new auth.GithubAuthProvider() );
+```
+
+
+<sub>./src/App.js</sub>
+```jsx
+import React, { useEffect } from 'react';
+import { auth, loginWithGithub } from './network';
+
+//...
+
+function App() {
+  useEffect(()=>{
+    auth().onAuthStateChanged((user) => {
+      if (user) console.log(user);
+    });
+  }, []);
+
+  //...
+
+      <button onClick={loginWithGithub}>Login</button>
+}
+
+//...
+```
+
+
+next:::
+
+- username, avatar image
+
+--> grab the userId from the avatar link
+
+- games
+
+--> make a collection in firebase
+--> make up a format in JSON exercise
+--> fill in data you scam off the internet
+
+- join table, display opponent
+- start game, end game, switch sides
+- start game from position
 
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).

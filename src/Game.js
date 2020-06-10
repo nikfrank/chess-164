@@ -88,7 +88,7 @@ const Game = ()=>{
     setTurn(turn => turn === 'w' ? 'b' : 'w');
     setSelected({});
     setMoves(moves => [...moves, promotion.move.slice(0, -1) + piece.toLowerCase()]);
-  }, [promotion, turn]);
+  }, [promotion, turn, pieces]);
 
   const showLegalMoves = useCallback(({ rank, file, piece })=>{
     const prefix = piece + String.fromCharCode(file+97) + (rank+1);
@@ -127,8 +127,10 @@ const Game = ()=>{
   };
 
   const onDragEnd = (start, end)=> {
-    if( start.rank === end.rank && start.file === end.file ) return;
-    onMove(end, { ...start, piece: start.type });
+    if( start.rank === end.rank && start.file === end.file )
+      onSelect({ ...start, piece: start.type });
+    else
+      onMove(end, { ...start, piece: start.type });
   };
   
   const onDragStart = showLegalMoves;
