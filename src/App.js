@@ -4,8 +4,9 @@ import './App.scss';
 import { HTML5Backend } from 'react-dnd-html5-backend'
 import { DndProvider } from 'react-dnd'
 
-import { auth, loginWithGithub, loadGames, createGame } from './network';
+import { auth, loginWithGithub, createGame } from './network';
 
+import SideNav from './SideNav';
 import Game from './Game';
 
 function App() {
@@ -16,17 +17,12 @@ function App() {
       if (!newUser) return;
       
       setUser(newUser);
-      loadGames().then((games)=>{
-        console.log(games);
-
-        //createGame();
-      });
     })
   }, []);
     
   return (
     <div className="App">
-      {!user && <button onClick={loginWithGithub}>Login</button>}
+      <SideNav user={user} onSelectGame={g=> console.log(g)}/>
       <DndProvider backend={HTML5Backend}>
         <Game />
       </DndProvider>

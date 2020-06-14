@@ -1834,33 +1834,91 @@ export const db = firebase.firestore();
 
 export const loginWithGithub = ()=>
   auth().signInWithPopup( new auth.GithubAuthProvider() );
+
+export const loadGames = (userId='6264797')=>
+  db.collection('games')
+    .where('w', '==', userId)
+    .get()
+    .then(snap => snap.map(doc=> doc.data()) )
+    .catch(e => console.error(e) );
+
 ```
 
+this code is all available in the [quickstart firestore guide](https://firebase.google.com/docs/firestore/quickstart)
+
+
+
+let's make a `SideNav` to trigger the login, but leave the `user` in the top level component
+
+`$ touch src/SideNav.js src/SideNav.scss`
+
+<sub>./src/SideNav.js</sub>
+```jsx
+import React, { useState, useEffect } from 'react';
+
+import { loginWithGithub, loadGames } from './network';
+
+function SideNav({ user, onSelectGame }) {
+
+  const [open, setOpen] = useState(false);
+  
+  useEffect(()=>{
+    loadGames().then((games)=>{
+      console.log(games);
+    });
+  }, [user])
+  
+  return (
+    <div className={'SideNav '+(open ? 'open' : 'closed'}>
+      {!user && <button onClick={loginWithGithub}>Login</button>}
+    </div>
+  );
+}
+
+export default SideNav;
+```
+
+this is made easier because `firebase`'s `auth` acts as a convenient global identity scope.
 
 <sub>./src/App.js</sub>
 ```jsx
-import React, { useEffect, useState } from 'react';
-import { auth, loginWithGithub } from './network';
-
 //...
+import { auth } from './network';
+
+import SideNav from './SideNav';
+import Game from './Game';
 
 function App() {
   const [user, setUser] = useState(null);
   
-    useEffect(()=>{
+  useEffect(()=>{
     auth().onAuthStateChanged((newUser) => {
       if (!newUser) return;
+      
       setUser(newUser);
     })
   }, []);
-
-  //...
-
-      {!user && <button onClick={loginWithGithub}>Login</button>}
+    
+  return (
+    <div className="App">
+      <SideNav user={user} onSelectGame={g=> console.log(g)}/>
+      <DndProvider backend={HTML5Backend}>
+        <Game />
+      </DndProvider>
+    </div>
+  );
 }
-
 //...
 ```
+
+and of course we'll need to style our `SideNav` to actually appear as a togglable sidenav
+
+
+<sub>./src/SideNav.scss</sub>
+```scss
+
+```
+
 
 now that we have users logging in with github, we can start our firebase (server side)
 

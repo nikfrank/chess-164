@@ -25,9 +25,10 @@ export const loginWithGithub = ()=>
   auth().signInWithPopup( new auth.GithubAuthProvider() );
 
 export const loadGames = (userId='6264797')=>
-  db.collection('games').where('w', '==', userId)
+  db.collection('games')
+    .where('w', '==', userId)
     .get()
-    .then(snap => snap.forEach(doc=> console.log(doc.data())) )
+    .then(snap => snap.map(doc=> doc.data()) )
     .catch(e => console.error(e) );
 
 export const createGame = ()=>
