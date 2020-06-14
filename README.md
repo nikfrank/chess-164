@@ -1784,6 +1784,12 @@ remaining ideas for front end:
 
 
 
+
+
+
+
+
+
 ### multiplayer online
 
 You'll need a Google account to follow along here, as we'll be building a firebase application to share the game state between two users.
@@ -1802,8 +1808,6 @@ firebase will allow localhost requests
 
 `$ yarn add firebase`
 
-adding credentials with .env in cra
-
 find the credentials and copy paste
 
 `$ touch src/network.js`
@@ -1813,7 +1817,7 @@ find the credentials and copy paste
 ```js
 import firebase from 'firebase/app';
 import 'firebase/auth';
-import 'firebase/database';
+import 'firebase/firestore';
 import 'firebase/analytics';
 
 const firebaseConfig = {
@@ -1825,7 +1829,7 @@ firebase.initializeApp(firebaseConfig);
 firebase.analytics();
 
 export const auth = firebase.auth;
-export const db = firebase.database();
+export const db = firebase.firestore();
 
 
 export const loginWithGithub = ()=>
@@ -1835,42 +1839,226 @@ export const loginWithGithub = ()=>
 
 <sub>./src/App.js</sub>
 ```jsx
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { auth, loginWithGithub } from './network';
 
 //...
 
 function App() {
-  useEffect(()=>{
-    auth().onAuthStateChanged((user) => {
-      if (user) console.log(user);
-    });
+  const [user, setUser] = useState(null);
+  
+    useEffect(()=>{
+    auth().onAuthStateChanged((newUser) => {
+      if (!newUser) return;
+      setUser(newUser);
+    })
   }, []);
 
   //...
 
-      <button onClick={loginWithGithub}>Login</button>
+      {!user && <button onClick={loginWithGithub}>Login</button>}
 }
 
 //...
 ```
 
+now that we have users logging in with github, we can start our firebase (server side)
 
-next:::
 
-- username, avatar image
+### making data on the console
 
---> grab the userId from the avatar link
-
-- games
-
---> make a collection in firebase
+--> make a games collection in firebase
 --> make up a format in JSON exercise
---> fill in data you scam off the internet
+--> fill in data
+--> test loading it
+
+
+
+
+### sideNav to view / join / create game
+
+now that we have some games in the database, we can load them and show them in a sidenav
+
+<sub>./src/network.js</sub>
+```js
+// loadGames
+```
+
+<sub>./src/App.js</sub>
+```jsx
+
+```
+
+and of course we'll put our login button / status in there as well
+
+<sub>./src/App.js</sub>
+```jsx
+
+```
+
+and now when the user selects a game, it should load to the `Game`'s `Board`
+
+<sub>./src/App.js</sub>
+```jsx
+
+```
+
+<sub>./src/Game.js</sub>
+```jsx
+
+```
+
+that's all great because we can add data on the firebase console! now let's let users create games
+
+
+
+### creating / joining games
+
+let's split our `SideNav` into two tabs
+
+<sub>./src/SideNav.js</sub>
+```jsx
+
+```
+
+one for "My Games" and one for "Open Challenges"
+
+```jsx
+
+```
+
+
+we'll need a "Create Game" button
+
+<sub>./src/SideNav.js</sub>
+```jsx
+
+```
+
+and a fullscreen view to fill in the details for the new game
+
+```jsx
+
+```
+
+and a network call to actually create the new game.
+
+<sub>./src/network.js</sub>
+```js
+
+```
+
+
+### realtime gameplay
+
+now that we can load the game we want, let's make sure our moves are sent to the database
+
+<sub>./src/Game.js</sub>
+```jsx
+// send data to firebase, .onSnapshot => setState -> Game.props
+```
+
+
+
+### game status
+
+when the game is over, we should give the user a chance to offer a rematch
+
+...
+
+
+
+
+- join game (with second github account)
+- make moves (update), load moves (realtime)
+- update game status (function?)
+- show game preview with StaticBoard component
+
+- improve security rules (only can move my pieces on my turn)
+
+- rematch button
+- clock, clock security
+- deep link public access any game (client routing finally)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+https://firebase.google.com/docs/rules/get-started
+
+https://firebase.google.com/docs/rules/rules-language
+
+https://firebase.google.com/docs/firestore/quickstart
+
+
+
+- userid from avatar image
+
+put api key in env (make new api key)
 
 - join table, display opponent
 - start game, end game, switch sides
 - start game from position
+
+
+#### firestore security rules
+
+we need to put the white_id and black_id in the <<path>> in order to limit write to players
+
+we can write a rule function which will only allow players to play if it's their turn (and to make sure the turn value updates)
+
+
+(( this is wrong... ))
+```firestore
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Allow only authenticated participants access
+    match /games/{uid}/{document} {
+      allow read, write: if request.auth != null && request.auth.uid == uid
+    }
+    match /games/{uid1}/{uid2}/{document} {
+      allow read, write: if request.auth != null &&
+        (request.auth.uid == uid1 || request.auth.uid == uid2)
+    }
+  }
+}
+
+```
+
+
+https://firebase.google.com/docs/firestore/data-model
+
+https://firebase.google.com/docs/firestore/quickstart
+
+that way users will be able to make games with an open slot, and other users will be able to make a game fulfilling the posted challenge (and make the first move if relevant)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
