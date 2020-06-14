@@ -11,6 +11,7 @@ import Game from './Game';
 
 function App() {
   const [user, setUser] = useState(null);
+  const [game, setGame] = useState(null);
   
   useEffect(()=>{
     auth().onAuthStateChanged((newUser) => {
@@ -22,9 +23,9 @@ function App() {
     
   return (
     <div className="App">
-      <SideNav user={user} onSelectGame={g=> console.log(g)}/>
+      <SideNav user={user} onSelectGame={setGame}/>
       <DndProvider backend={HTML5Backend}>
-        <Game />
+        <Game game={game}/>
       </DndProvider>
     </div>
   );

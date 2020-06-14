@@ -1,0 +1,40 @@
+.SideNav {
+  position: fixed;
+  left: -50vw;
+  right: 100vw;
+  top: 0;
+  bottom: 0;
+  background-color: #3161a1;
+  z-index: 10;
+  transition: all 1s;
+  
+  &.open {
+    left: 0;
+    right: 50vw;
+  }
+
+  &.closed {
+    left: -50vw;
+    right: 100vw;
+  }
+
+  .toggle {
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    height: 35px;
+    width: 25px;
+  }
+
+  &.open .toggle::before {
+    content: "\2039";
+    font-size: 3rem;
+    line-height: 0.5;
+  }
+  
+  &.closed .toggle::before {
+    content: "\203A";
+    font-size: 3rem;
+    line-height: 0.5;
+  }
+}

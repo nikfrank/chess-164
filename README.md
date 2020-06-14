@@ -1311,6 +1311,7 @@ so we can define our format with
     (cjsMove.color === 'w' ? cjsMove.piece.toUpperCase() : cjsMove.piece) +
     cjsMove.from + cjsMove.to +
     (cjsMove.flags.includes('c') ? 'x' : '') +
+    (cjsMove.flags.includes('e') ? 'x' : '') +
     (cjsMove.promotion || '')
   ));
 
@@ -1387,17 +1388,19 @@ we can now use them to calculate `legalMoves` correctly,
   
   const onMove = useCallback(({ rank, file }, moveFrom=selected)=>{
     const legalMoves = calculateLegalMoves(pieces, turn, moves);
-    
+
+    const promoting = moveFrom.piece.match(/p/i) && (!rank || rank === 7);
+    const enPassant = !pieces[rank][file] &&
+                      moveFrom.piece.match(/p/i) &&
+                      moveFrom.file !== file;
+
     const move = (
       turn === 'w' ? moveFrom.piece.toUpperCase() : moveFrom.piece
     ) + (
       String.fromCharCode(moveFrom.file+97) + (moveFrom.rank+1)
     ) + (
       (String.fromCharCode(file+97)) + (rank+1)
-    ) + (pieces[rank][file] ? 'x' : '') + (
-      // only need to check if promotion is legal. underpromotion handled elsewhere.
-      moveFrom.piece.match(/p/i) && (!rank || rank === 7) ? 'q' : ''
-    );
+    ) + (pieces[rank][file] || enPassant ? 'x' : '') + (promoting ? 'q' : '');
 
 ```
 
@@ -1415,7 +1418,7 @@ and block illegal moves
 ```
 
 
-now we can fix the movements for castling
+now we can fix the movements for castling and en passant
 
 ```jsx
     const nextPieces = JSON.parse(JSON.stringify(pieces));
@@ -1432,6 +1435,8 @@ now we can fix the movements for castling
         nextPieces[rank][0] = '';
       }
     }
+    if( enPassant ) nextPieces[rank === 2 ? 3 : 4][file] = '';
+    
     setPieces(nextPieces);
 ```
 
@@ -1454,7 +1459,7 @@ When a pawn attempts to land on the end of the board, we need to show the user a
   const onMove = useCallback(({ rank, file }, moveFrom=selected)=>{
     const legalMoves = calculateLegalMoves(pieces, turn, moves);
 
-    let promoting = moveFrom.piece.match(/p/i) && (!rank || rank === 7);
+    const promoting = moveFrom.piece.match(/p/i) && (!rank || rank === 7);
 
     //...
 
@@ -1790,7 +1795,9 @@ remaining ideas for front end:
 
 
 
-### multiplayer online
+## multiplayer online
+
+### firebase getting started
 
 You'll need a Google account to follow along here, as we'll be building a firebase application to share the game state between two users.
 
@@ -1835,17 +1842,14 @@ export const db = firebase.firestore();
 export const loginWithGithub = ()=>
   auth().signInWithPopup( new auth.GithubAuthProvider() );
 
-export const loadGames = (userId='6264797')=>
-  db.collection('games')
-    .where('w', '==', userId)
-    .get()
-    .then(snap => snap.map(doc=> doc.data()) )
-    .catch(e => console.error(e) );
-
 ```
 
 this code is all available in the [quickstart firestore guide](https://firebase.google.com/docs/firestore/quickstart)
 
+the `docs` that we're resolving are firebase documents, so we'll be able to use all the realtime methods built in.
+
+
+### side nav games menu
 
 
 let's make a `SideNav` to trigger the login, but leave the `user` in the top level component
@@ -1855,21 +1859,19 @@ let's make a `SideNav` to trigger the login, but leave the `user` in the top lev
 <sub>./src/SideNav.js</sub>
 ```jsx
 import React, { useState, useEffect } from 'react';
+import './SideNav.scss';
 
-import { loginWithGithub, loadGames } from './network';
+import { loginWithGithub } from './network';
 
 function SideNav({ user, onSelectGame }) {
 
   const [open, setOpen] = useState(false);
-  
-  useEffect(()=>{
-    loadGames().then((games)=>{
-      console.log(games);
-    });
-  }, [user])
+    
+  const toggle = ()=> setOpen(o => !o);
   
   return (
-    <div className={'SideNav '+(open ? 'open' : 'closed'}>
+    <div className={'SideNav '+(open ? 'open' : 'closed')}>
+      <div className='toggle' onClick={toggle}/>
       {!user && <button onClick={loginWithGithub}>Login</button>}
     </div>
   );
@@ -1916,7 +1918,46 @@ and of course we'll need to style our `SideNav` to actually appear as a togglabl
 
 <sub>./src/SideNav.scss</sub>
 ```scss
+.SideNav {
+  position: fixed;
+  left: -50vw;
+  right: 100vw;
+  top: 0;
+  bottom: 0;
+  background-color: #3161a1;
+  z-index: 10;
+  transition: all 1s;
+  
+  &.open {
+    left: 0;
+    right: 50vw;
+  }
 
+  &.closed {
+    left: -50vw;
+    right: 100vw;
+  }
+
+  .toggle {
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    height: 35px;
+    width: 25px;
+  }
+
+  &.open .toggle::before {
+    content: "\2039";
+    font-size: 3rem;
+    line-height: 0.5;
+  }
+  
+  &.closed .toggle::before {
+    content: "\203A";
+    font-size: 3rem;
+    line-height: 0.5;
+  }
+}
 ```
 
 
@@ -1939,11 +1980,33 @@ now that we have some games in the database, we can load them and show them in a
 
 <sub>./src/network.js</sub>
 ```js
-// loadGames
+//...
+
+export const loadGames = (userId='6264797')=>
+  db.collection('games')
+    .where('w', '==', userId)
+    .get()
+    .then(snap => snap.docs);
+
 ```
 
-<sub>./src/App.js</sub>
+
+<sub>./src/SideNav.js</sub>
 ```jsx
+//...
+
+import { loginWithGithub, loadGames } from './network';
+
+//...
+
+  useEffect(()=>{
+    loadGames().then((games)=>{
+      console.log(games.map(g => g.data()));
+    }).catch(e => console.error(e) );
+  }, [user])
+
+  //...
+
 
 ```
 

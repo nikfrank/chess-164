@@ -78,6 +78,7 @@ export const calculateLegalMoves = (pieces, turn, moves, moveFrom)=> {
     (cjsMove.color === 'w' ? cjsMove.piece.toUpperCase() : cjsMove.piece) +
     cjsMove.from + cjsMove.to +
     (cjsMove.flags.includes('c') ? 'x' : '') +
+    (cjsMove.flags.includes('e') ? 'x' : '') +
     (cjsMove.promotion || '')
   ));
 };

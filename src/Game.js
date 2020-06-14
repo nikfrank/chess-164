@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import Board from './Board';
 
 import { initPieces, calculateLegalMoves } from './chess-util';
@@ -20,18 +20,25 @@ const PromotionWidget = ({ turn, onPromote })=>{
   );
 };
 
-const Game = ()=>{
+const Game = ({ game })=>{
   const [pieces, setPieces] = useState(initPieces);
   const [selected, setSelected] = useState({});
   const [turn, setTurn] = useState('w');
   const [moves, setMoves] = useState([]);
   const [promotion, setPromotion] = useState(null);
   const [legalMovesDisplay, setLegalMovesDisplay] = useState({});
+
+  useEffect(()=>{
+    if(game) console.log(game.data());
+  }, [game]);
   
   const onMove = useCallback(({ rank, file }, moveFrom=selected)=>{
     const legalMoves = calculateLegalMoves(pieces, turn, moves);
 
-    let promoting = moveFrom.piece.match(/p/i) && (!rank || rank === 7);
+    const promoting = moveFrom.piece.match(/p/i) && (!rank || rank === 7);
+    const enPassant = !pieces[rank][file] &&
+                      moveFrom.piece.match(/p/i) &&
+                      moveFrom.file !== file;
     
     let move = (
       turn === 'w' ? moveFrom.piece.toUpperCase() : moveFrom.piece
@@ -39,7 +46,7 @@ const Game = ()=>{
       String.fromCharCode(moveFrom.file+97) + (moveFrom.rank+1)
     ) + (
       (String.fromCharCode(file+97)) + (rank+1)
-    ) + (pieces[rank][file] ? 'x' : '') + (promoting ? 'q' : '');
+    ) + (pieces[rank][file] || enPassant ? 'x' : '') + (promoting ? 'q' : '');
 
     if( move === 'ke8g8' ) move = 'o-o';
     if( move === 'ke8c8' ) move = 'o-o-o';
@@ -62,6 +69,8 @@ const Game = ()=>{
         nextPieces[rank][0] = '';
       }
     }
+    if( enPassant ) nextPieces[rank === 2 ? 3 : 4][file] = '';
+    
     setPieces(nextPieces);
 
     setSelected({});

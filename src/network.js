@@ -28,8 +28,7 @@ export const loadGames = (userId='6264797')=>
   db.collection('games')
     .where('w', '==', userId)
     .get()
-    .then(snap => snap.map(doc=> doc.data()) )
-    .catch(e => console.error(e) );
+    .then(snap => snap.docs);
 
 export const createGame = ()=>
   db.collection('games').add({
