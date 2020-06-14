@@ -25,27 +25,31 @@ export const loginWithGithub = ()=>
   auth().signInWithPopup( new auth.GithubAuthProvider() );
 
 export const loadGames = (userId='6264797')=>
-  db.collection('games')
-    .where('w', '==', userId)
-    .get()
-    .then(snap => snap.docs);
+  Promise.all([
+    db.collection('games')
+      .where('w', '==', userId).get()
+      .then(snap => snap.docs),
+
+    db.collection('games')
+      .where('b', '==', userId).get()
+      .then(snap => snap.docs)
+  ]).then(g => g.flat());
 
 export const createGame = ()=>
   db.collection('games').add({
     "timeRules": "3|2",
-    "initPieces": "",
     "stakes": "tree fiddy",
-    "initMoves": [],
-    "moves": [
-      {
-        "piece": "P",
-        "t": firebase.firestore.Timestamp.now(),
-        "end": "e4",
-        "san": "e4",
-        "start": "e2",
-        "dis": "Pe2e4"
-      }
+    "pieces": [
+      'R','N','B','Q','K','B','N','R',
+      'P','P','P','P','P','P','P','P',
+      '','','','','','','','',
+      '','','','','','','','',
+      '','','','','','','','',
+      '','','','','','','','',
+      'p','p','p','p','p','p','p','p',
+      'r','n','b','q','k','b','n','r',
     ],
+    "moves": [],
     "b": "50657694",
     "w": "6264797",
     "bname": "dan",
