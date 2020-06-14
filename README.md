@@ -1803,13 +1803,13 @@ You'll need a Google account to follow along here, as we'll be building a fireba
 
 [check out the firebase console](https://console.firebase.google.com/)
 
-create app
+create an app
 
-authentication
+add authentication
 
 [create oauth github app](https://developer.github.com/apps/building-oauth-apps/creating-an-oauth-app/)
 
-copy over clientId, secret into firebase console
+copy over clientId, secret into firebase console from github app page (dev settings)
 
 firebase will allow localhost requests
 
@@ -1966,11 +1966,44 @@ now that we have users logging in with github, we can start our firebase (server
 
 ### making data on the console
 
---> make a games collection in firebase
---> make up a format in JSON exercise
---> fill in data
---> test loading it
+first we need to make a `games` collection in firebase
 
+now we should put a sample game in to start coding against
+
+```json
+{
+  "w": "555555",
+  "pieces": [
+    "R","N","B","Q","K","B","N","R",
+    "P","P","P","P","P","P","P","P",
+    "", "", "", "", "", "", "", "",
+    "", "", "", "", "", "", "", "",
+    "", "", "", "", "", "", "", "",
+    "", "", "", "", "", "", "", "",
+    "p","p","p","p","p","p","p","p",
+    "r","n","b","q","k","b","n","r"
+  ],
+  "bname": "nik",
+  "b": "666666",
+  "moves": [],
+  "wname": "dan"
+}
+```
+
+please use your own real github id(s) for `b` and `w`!
+
+also note that we have to store our pieces as a 1-D 64 length array, as nested arrays aren't possible in one firestore document. We'll have to convert back and forth on network calls.
+
+
+now we can test loading the game once we logged in with
+
+```js
+  db.collection('games')
+    .where('w', '==', userId).get()
+    .then(snap => snap.forEach(doc=> console.log(doc.data)));
+```
+
+we'll be using this as a starting point for the `loadGames` function later, so don't worry about it too much yet. What's important now is that we can load a game from the server.
 
 
 
@@ -1982,7 +2015,7 @@ now that we have some games in the database, we can load them and show them in a
 ```js
 //...
 
-export const loadGames = (userId='6264797')=>
+export const loadGames = (userId)=>
   db.collection('games')
     .where('w', '==', userId)
     .get()
@@ -1999,15 +2032,27 @@ import { loginWithGithub, loadGames } from './network';
 
 //...
 
+  const [myGames, setMyGames] = useState([]);
+  
   useEffect(()=>{
     loadGames().then((games)=>{
-      console.log(games.map(g => g.data()));
+      setMyGames(games);
     }).catch(e => console.error(e) );
-  }, [user])
+  }, [user]);
 
   //...
 
+      <div>
+        {myGames
+          .map(g => g.data())
+          .map((game, i)=> (
+            <div key={i} onClick={()=> onSelectGame(myGames[i])}>
+              {game.wname} vs {game.bname}
+            </div>
+          ))}
+      </div>
 
+//...
 ```
 
 and of course we'll put our login button / status in there as well
