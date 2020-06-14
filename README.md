@@ -2066,15 +2066,36 @@ and now when the user selects a game, it should load to the `Game`'s `Board`
 
 <sub>./src/App.js</sub>
 ```jsx
+  //...
 
+  const [game, setGame] = useState(null);
+
+  //...
+
+      <SideNav user={user} onSelectGame={setGame}/>
+      
+      //...
+
+        <Game game={game}/>
+        
+  //...
 ```
 
 <sub>./src/Game.js</sub>
 ```jsx
+//...
 
+const Game = ({ game })=>{
+  //...
+  
+  useEffect(()=>{
+    if(game) console.log(game.data());
+    // game.onSnapShot => setStates
+    // onSetState => game.update
+  }, [game]);
 ```
 
-that's all great because we can add data on the firebase console! now let's let users create games
+that's all great because we can add data on the firebase console - now let's let users create games
 
 
 

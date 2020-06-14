@@ -30,6 +30,8 @@ const Game = ({ game })=>{
 
   useEffect(()=>{
     if(game) console.log(game.data());
+    // game.onSnapShot => setStates
+    // onSetState => game.update
   }, [game]);
   
   const onMove = useCallback(({ rank, file }, moveFrom=selected)=>{
