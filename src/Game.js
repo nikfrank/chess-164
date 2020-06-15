@@ -4,6 +4,8 @@ import Board from './Board';
 import { initPieces, calculateLegalMoves } from './chess-util';
 import Piece from 'react-chess-pieces';
 
+import { db } from './network';
+
 const PromotionWidget = ({ turn, onPromote })=>{
   const promote = piece => e=> {
     e.stopPropagation();
@@ -20,20 +22,51 @@ const PromotionWidget = ({ turn, onPromote })=>{
   );
 };
 
-const Game = ({ game })=>{
-  const [pieces, setPieces] = useState(initPieces);
+const Game = ({ remoteGame })=>{
+  const [pieces, setPiecesLocal] = useState(initPieces);
   const [selected, setSelected] = useState({});
-  const [turn, setTurn] = useState('w');
-  const [moves, setMoves] = useState([]);
+  const [turn, setTurnLocal] = useState('w');
+  const [moves, setMovesLocal] = useState([]);
   const [promotion, setPromotion] = useState(null);
   const [legalMovesDisplay, setLegalMovesDisplay] = useState({});
 
-  useEffect(()=>{
-    if(game) console.log(game.data());
-    // game.onSnapShot => setStates
-    // onSetState => game.update
-  }, [game]);
+  const setPieces = useCallback((p)=>{
+    if(remoteGame)
+      db.collection('games').doc(remoteGame).update({ pieces: p.flat() })
+        .then(()=> setPiecesLocal(p) );
+    
+    else setPiecesLocal(p);
+    
+  }, [setPiecesLocal, remoteGame]);
+
+  const setTurn = useCallback((t)=>{
+    if(remoteGame)
+      db.collection('games').doc(remoteGame).update({ turn: t })
+        .then(()=> setTurnLocal(t) );
+
+    else setTurnLocal(t);
+  }, [setTurnLocal, remoteGame]);
+
+  const setMoves = useCallback((m)=>{
+    if(remoteGame)
+      db.collection('games').doc(remoteGame).update({ moves: m })
+        .then(()=> setMovesLocal(m) );
+
+    else setMovesLocal(m);
+  }, [setMovesLocal, remoteGame]);
   
+  useEffect(()=>{
+    if(remoteGame) {
+      db.collection('games').doc(remoteGame).onSnapshot(doc => {
+        const g = doc.data();
+        setPiecesLocal(
+          Array(8).fill(0).map((_,i)=> g.pieces.slice(i*8, 8+ i*8))
+        );
+        setTurnLocal(g.turn);
+      } );
+    }
+  }, [remoteGame]);
+
   const onMove = useCallback(({ rank, file }, moveFrom=selected)=>{
     const legalMoves = calculateLegalMoves(pieces, turn, moves);
 
@@ -78,12 +111,12 @@ const Game = ({ game })=>{
     setSelected({});
 
     if(!promoting){
-      setTurn(turn => turn === 'w' ? 'b' : 'w');
+      setTurn(turn === 'w' ? 'b' : 'w');
       setMoves([...moves, move]);
       
     } else setPromotion({ rank, file, move });
     
-  }, [selected, moves, pieces, turn]);
+  }, [selected, moves, pieces, turn, setMoves, setPieces, setTurn]);
 
 
   const onPromote = useCallback((piece)=> {
@@ -96,10 +129,10 @@ const Game = ({ game })=>{
     setPieces(nextPieces);
       
     setPromotion(null);
-    setTurn(turn => turn === 'w' ? 'b' : 'w');
+    setTurn(turn === 'w' ? 'b' : 'w');
     setSelected({});
     setMoves(moves => [...moves, promotion.move.slice(0, -1) + piece.toLowerCase()]);
-  }, [promotion, turn, pieces]);
+  }, [promotion, turn, pieces, setMoves, setPieces, setTurn]);
 
   const showLegalMoves = useCallback(({ rank, file, piece })=>{
     const prefix = piece + String.fromCharCode(file+97) + (rank+1);

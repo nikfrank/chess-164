@@ -849,7 +849,7 @@ const Game = ()=>{
     setPieces(nextPieces);
     
     setSelected({});
-    setTurn(turn => turn === 'w' ? 'b' : 'w');
+    setTurn(turn === 'w' ? 'b' : 'w');
 
     // push move
     
@@ -1467,7 +1467,7 @@ When a pawn attempts to land on the end of the board, we need to show the user a
     setSelected({});
 
     if(!promoting){
-      setTurn(turn => turn === 'w' ? 'b' : 'w');
+      setTurn(turn === 'w' ? 'b' : 'w');
       setMoves([...moves, move]);
       
     } else setPromotion({ rank, file, move });
@@ -1613,7 +1613,7 @@ back in the `Game`, we still need to write our `onPromote` callback function
     setPieces(nextPieces);
 
     setPromotion(null);
-    setTurn(turn => turn === 'w' ? 'b' : 'w');
+    setTurn(turn === 'w' ? 'b' : 'w');
     setSelected({});
     setMoves(moves => [...moves, promotion.move.slice(0, -1) + piece.toLowerCase()]);
   }, [promotion, turn, pieces]);
@@ -1811,6 +1811,8 @@ add authentication
 
 copy over clientId, secret into firebase console from github app page (dev settings)
 
+I also made sure that my custom domain would work with heroku, github and firebase.
+
 firebase will allow localhost requests
 
 `$ yarn add firebase`
@@ -1986,11 +1988,12 @@ now we should put a sample game in to start coding against
   "bname": "nik",
   "b": "666666",
   "moves": [],
-  "wname": "dan"
+  "wname": "dan",
+  "turn": "w"
 }
 ```
 
-please use your own real github id(s) for `b` and `w`!
+please use your own real github id(s) for `b` and `w` - or else you won't be allowed to play (later when we build tighter security)
 
 also note that we have to store our pieces as a 1-D 64 length array, as nested arrays aren't possible in one firestore document. We'll have to convert back and forth on network calls.
 
@@ -2009,7 +2012,89 @@ we'll be using this as a starting point for the `loadGames` function later, so d
 
 ### sideNav to view / join / create game
 
-now that we have some games in the database, we can load them and show them in a sidenav
+
+we'll style our login button / status into the `SideNav`
+
+<sub>./src/App.js</sub>
+```jsx
+//...
+
+import githubLogo from './github.svg'
+
+  //...
+  const [nickname, setNickname] = useState(localStorage.nickname || '');
+
+  //...
+
+  useEffect(()=>{ localStorage.nickname = nickname }, [nickname]);
+
+  //...
+  
+      <div className='login-container'>
+        {!user? (
+           <button className='login' onClick={loginWithGithub}>
+             Login with <img src={githubLogo}/>
+           </button>
+         ) : (
+           <>
+             <img src={user.photoURL} />
+             <input placeholder='Set Nickname'
+                    value={nickname} onChange={e=> setNickname(e.target.value)}/>
+           </>
+         )}
+      </div>
+```
+
+<sub>./src/src/SideNav.scss</sub>
+```scss
+  //...
+
+  .login-container {
+    button {
+      border-radius: 5px;
+      border-style: solid;
+      outline: none;
+      margin: 10px;
+
+      &:active {
+        background-color: #555;
+        border-color: #555;
+      }
+
+      img {
+        user-select: none;
+      }
+    }
+
+    & > img {
+      margin: 10px 0 0 50px;
+      height: 50px;
+      width: auto;
+    }
+
+    & > input {
+      padding: 4px;
+      border-radius: 3px;
+      font-weight: 800;
+      font-size: 1.125rem;
+      background-color: transparent;
+      color: white;
+      max-width: 30vw;
+      border: 1px dashed white;
+      outline: none;
+      margin-top: 5px;
+
+      &::placeholder {
+        color: #ffd;
+      }
+    }
+  }
+
+  //...
+```
+
+
+and now that we have some games in the database, we can load them and show them in a sidenav
 
 <sub>./src/network.js</sub>
 ```js
@@ -2046,7 +2131,7 @@ import { loginWithGithub, loadGames } from './network';
         {myGames
           .map(g => g.data())
           .map((game, i)=> (
-            <div key={i} onClick={()=> onSelectGame(myGames[i])}>
+            <div key={i} onClick={()=> onSelectGame(myGames[i].id)}>
               {game.wname} vs {game.bname}
             </div>
           ))}
@@ -2055,14 +2140,34 @@ import { loginWithGithub, loadGames } from './network';
 //...
 ```
 
-and of course we'll put our login button / status in there as well
+(take note of how we're managing the firebase objects and their data)
 
-<sub>./src/App.js</sub>
-```jsx
+in the next section, we'll build a `StaticBoard` component to display games.
 
+If you made yourself the black player in any games, you'll notice we have a bug! (if you haven't, got make one)
+
+we need to load games where the user is white OR black
+
+<sub>./src/network.js</sub>
+```js
+//...
+
+export const loadGames = (userId)=>
+  Promise.all([
+    db.collection('games')
+      .where('w', '==', userId).get()
+      .then(snap => snap.docs),
+
+    db.collection('games')
+      .where('b', '==', userId).get()
+      .then(snap => snap.docs)
+  ]).then(g => g.flat());
 ```
 
-and now when the user selects a game, it should load to the `Game`'s `Board`
+much better.
+
+
+so now when the user selects a game, it should load to the `Game`'s `Board`
 
 <sub>./src/App.js</sub>
 ```jsx
@@ -2076,26 +2181,77 @@ and now when the user selects a game, it should load to the `Game`'s `Board`
       
       //...
 
-        <Game game={game}/>
+        <Game remoteGame={game}/>
         
   //...
 ```
+
+and the `Game` should keep out local state in sync with the firsabase game.
 
 <sub>./src/Game.js</sub>
 ```jsx
 //...
 
-const Game = ({ game })=>{
+const Game = ({ remoteGame })=>{
+  const [pieces, setPiecesLocal] = useState(initPieces);
+  const [turn, setTurnLocal] = useState('w');
+  const [moves, setMovesLocal] = useState([]);
   //...
+
+  const setPieces = useCallback((p)=>{
+    if(remoteGame)
+      db.collection('games').doc(remoteGame).update({ pieces: p.flat() })
+        .then(()=> setPiecesLocal(p) );
+    
+    else setPiecesLocal(p);
+    
+  }, [setPiecesLocal, remoteGame]);
+
+  const setTurn = useCallback((t)=>{
+    if(remoteGame)
+      db.collection('games').doc(remoteGame).update({ turn: t })
+        .then(()=> setTurnLocal(t) );
+
+    else setTurnLocal(t);
+  }, [setTurnLocal, remoteGame]);
+
+  const setMoves = useCallback((m)=>{
+    if(remoteGame)
+      db.collection('games').doc(remoteGame).update({ moves: m })
+        .then(()=> setMovesLocal(m) );
+
+    else setMovesLocal(m);
+  }, [setMovesLocal, remoteGame]);
   
   useEffect(()=>{
-    if(game) console.log(game.data());
-    // game.onSnapShot => setStates
-    // onSetState => game.update
-  }, [game]);
+    if(remoteGame) {
+      db.collection('games').doc(remoteGame).onSnapshot(doc => {
+        const g = doc.data();
+        setPiecesLocal(
+          Array(8).fill(0).map((_,i)=> g.pieces.slice(i*8, 8+ i*8))
+        );
+        setTurnLocal(g.turn);
+      } );
+    }
+  }, [remoteGame]);
+
+  //...
 ```
 
-that's all great because we can add data on the firebase console - now let's let users create games
+that's all great for now because we can add data on the firebase console - later we'll need to give the user the choice to make a new game.
+
+
+
+### StaticBoard display
+
+Here we'll redo some of the work from `Board`, or our first attaempt at a board
+
+`$ touch src/StaticBoard.js`
+
+<sub>./src/StaticBoard.js</sub>
+```jsx
+
+```
 
 
 
@@ -2241,7 +2397,11 @@ that way users will be able to make games with an open slot, and other users wil
 
 
 
+https://firebase.google.com/docs/firestore/query-data/queries
 
+https://firebase.google.com/docs/firestore/manage-data/add-data
+
+https://firebase.google.com/docs/firestore/query-data/listen
 
 
 

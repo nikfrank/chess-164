@@ -37,4 +37,49 @@
     font-size: 3rem;
     line-height: 0.5;
   }
+
+  .login-container {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    
+    button {
+      border-radius: 5px;
+      border-style: solid;
+      outline: none;
+      margin: 10px;
+
+      &:active {
+        background-color: #555;
+        border-color: #555;
+      }
+
+      img {
+        user-select: none;
+      }
+    }
+
+    & > img {
+      margin: 10px 0 0 50px;
+      height: 50px;
+      width: auto;
+    }
+
+    & > input {
+      padding: 4px;
+      border-radius: 3px;
+      font-weight: 800;
+      font-size: 1.125rem;
+      background-color: transparent;
+      color: white;
+      max-width: 30vw;
+      border: 1px dashed white;
+      outline: none;
+      margin-top: 5px;
+
+      &::placeholder {
+        color: #ffd;
+      }
+    }
+  }
 }

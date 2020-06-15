@@ -4,7 +4,7 @@ import './App.scss';
 import { HTML5Backend } from 'react-dnd-html5-backend'
 import { DndProvider } from 'react-dnd'
 
-import { auth, loginWithGithub, createGame } from './network';
+import { auth } from './network';
 
 import SideNav from './SideNav';
 import Game from './Game';
@@ -12,7 +12,7 @@ import Game from './Game';
 function App() {
   const [user, setUser] = useState(null);
   const [game, setGame] = useState(null);
-  
+
   useEffect(()=>{
     auth().onAuthStateChanged((newUser) => {
       if (!newUser) return;
@@ -25,7 +25,7 @@ function App() {
     <div className="App">
       <SideNav user={user} onSelectGame={setGame}/>
       <DndProvider backend={HTML5Backend}>
-        <Game game={game}/>
+        <Game remoteGame={game}/>
       </DndProvider>
     </div>
   );
