@@ -22,13 +22,14 @@ const PromotionWidget = ({ turn, onPromote })=>{
   );
 };
 
-const Game = ({ remoteGame })=>{
+const Game = ({ remoteGame, user })=>{
   const [pieces, setPiecesLocal] = useState(initPieces);
   const [selected, setSelected] = useState({});
   const [turn, setTurnLocal] = useState('w');
   const [moves, setMovesLocal] = useState([]);
   const [promotion, setPromotion] = useState(null);
   const [legalMovesDisplay, setLegalMovesDisplay] = useState({});
+  const [flipped, setFlipped] = useState(false);
 
   const setPieces = useCallback((p)=>{
     if(remoteGame)
@@ -63,9 +64,10 @@ const Game = ({ remoteGame })=>{
           Array(8).fill(0).map((_,i)=> g.pieces.slice(i*8, 8+ i*8))
         );
         setTurnLocal(g.turn);
+        setFlipped(g.b === user?.providerData[0].uid);
       } );
     }
-  }, [remoteGame]);
+  }, [remoteGame, user]);
 
   const onMove = useCallback(({ rank, file }, moveFrom=selected)=>{
     const legalMoves = calculateLegalMoves(pieces, turn, moves);
@@ -183,6 +185,7 @@ const Game = ({ remoteGame })=>{
 
   return (
     <Board
+        flipped={flipped}
         pieces={pieces}
         markers={legalMovesDisplay}
         onSelect={onSelect}

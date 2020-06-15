@@ -2295,15 +2295,42 @@ and a network call to actually create the new game.
 ```
 
 
-### realtime gameplay
+### flipping the board
 
-now that we can load the game we want, let's make sure our moves are sent to the database
+when the user is playing as black, we should change the `flex-direction` on the `Board`
+
+
+<sub>./src/App.js</sub>
+```jsx
+        <Game remoteGame={game} user={user}/>
+```
 
 <sub>./src/Game.js</sub>
 ```jsx
-// send data to firebase, .onSnapshot => setState -> Game.props
+const Game = ({ remoteGame, user })=>{
+
+  const [flipped, setFlipped] = useState(false);
+
+        setFlipped(g.b === user?.providerData[0].uid);
+
+  }, [remoteGame, user]);
+
+
+ <Board flipped={flipped} .../>
 ```
 
+<sub>./src/Board.js</sub>
+```jsx
+
+function Board({
+  pieces, onSelect, selected, onClick, onDragEnd, onDragStart,
+  promotion, promotionWidget, markers, flipped,
+}) {
+
+
+    <div className="Board" style={{ flexDirection: flipped ? 'column' : 'column-reverse' }}>
+
+```
 
 
 ### game status

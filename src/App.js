@@ -24,7 +24,7 @@ function App() {
     <div className="App">
       <SideNav user={user} onSelectGame={setGame}/>
       <DndProvider backend={HTML5Backend}>
-        <Game remoteGame={game}/>
+        <Game remoteGame={game} user={user}/>
       </DndProvider>
     </div>
   );

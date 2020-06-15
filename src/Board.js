@@ -74,7 +74,7 @@ const MarkerSVGS = {
 
 function Board({
   pieces, onSelect, selected, onClick, onDragEnd, onDragStart,
-  promotion, promotionWidget, markers,
+  promotion, promotionWidget, markers, flipped,
 }) {
 
   const clickHandler = ({ rank, file, piece })=>{
@@ -87,7 +87,7 @@ function Board({
   });
   
   return (
-    <div className="Board">
+    <div className="Board" style={{ flexDirection: flipped ? 'column' : 'column-reverse' }}>
       {pieces.map((row, rank)=> (
          <div className='rank' key={rank}>
            {row.map((piece, file)=> (
