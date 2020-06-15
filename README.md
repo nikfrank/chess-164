@@ -2225,7 +2225,7 @@ const Game = ({ remoteGame })=>{
   
   useEffect(()=>{
     if(remoteGame) {
-      db.collection('games').doc(remoteGame).onSnapshot(doc => {
+      return db.collection('games').doc(remoteGame).onSnapshot(doc => {
         const g = doc.data();
         setPiecesLocal(
           Array(8).fill(0).map((_,i)=> g.pieces.slice(i*8, 8+ i*8))
@@ -2238,13 +2238,16 @@ const Game = ({ remoteGame })=>{
   //...
 ```
 
+in the `useEffect`, we return the `unsubscribe` callback provided by firebase's `onSnapshot` in order to remove the listener if the user selects a different game.
+
+
 that's all great for now because we can add data on the firebase console - later we'll need to give the user the choice to make a new game.
 
 
 
 ### StaticBoard display
 
-Here we'll redo some of the work from `Board`, or our first attaempt at a board
+Here we'll redo some of the work from `Board`, or our first attaempt at a board, to make a heads-up static display of the game in the `SideNav`
 
 `$ touch src/StaticBoard.js`
 

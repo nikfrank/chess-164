@@ -16,7 +16,6 @@ function App() {
   useEffect(()=>{
     auth().onAuthStateChanged((newUser) => {
       if (!newUser) return;
-      console.log(newUser.providerData[0].uid);
       setUser(newUser);
     })
   }, []);

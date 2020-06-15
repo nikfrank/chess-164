@@ -57,7 +57,7 @@ const Game = ({ remoteGame })=>{
   
   useEffect(()=>{
     if(remoteGame) {
-      db.collection('games').doc(remoteGame).onSnapshot(doc => {
+      return db.collection('games').doc(remoteGame).onSnapshot(doc => {
         const g = doc.data();
         setPiecesLocal(
           Array(8).fill(0).map((_,i)=> g.pieces.slice(i*8, 8+ i*8))
