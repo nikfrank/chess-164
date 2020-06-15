@@ -2120,7 +2120,7 @@ import { loginWithGithub, loadGames } from './network';
   const [myGames, setMyGames] = useState([]);
   
   useEffect(()=>{
-    loadGames(user.providerData[0].uid).then((games)=>{
+    if(user) loadGames(user.providerData[0].uid).then((games)=>{
       setMyGames(games);
     }).catch(e => console.error(e) );
   }, [user]);
