@@ -35,6 +35,16 @@ export const loadGames = (userId)=>
       .then(snap => snap.docs)
   ]).then(g => g.flat().map(game => ({ ...game.data(), id: game.id })) );
 
+export const loadChallenges = ()=>
+  Promise.all([
+    db.collection('games').where('b', '==', '').get(),
+    db.collection('games').where('w', '==', '').get()
+  ]).then( snaps=>
+    snaps.map(snap => snap.docs).flat()
+         .map(game => ({ ...game.data(), id: game.id }))
+  );
+
+
 export const createGame = ()=>
   db.collection('games').add({
     "timeRules": "3|2",

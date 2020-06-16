@@ -2411,10 +2411,18 @@ let's split our `SideNav` into two tabs
 
   //...
 
-      <div className='tabs-headers'>
-        <div onClick={()=> setCurrentTab('games-list')}>Games List</div>
-        <div onClick={()=> setCurrentTab('join-list')}>Open Challenges</div>
-      </div>
+      {user && (
+         <div className='tabs-headers'>
+           <div onClick={()=> setCurrentTab('games-list')}
+                className={currentTab === 'games-list' ? 'selected' : ''}>
+             Games List
+           </div>
+           <div onClick={()=> setCurrentTab('join-list')}
+                className={currentTab === 'join-list' ? 'selected' : ''}>
+             Open Challenges
+           </div>
+         </div>
+      )}
 
       {currentTab === 'games-list' && (
          <div className='games-list'>
@@ -2435,7 +2443,33 @@ one for "My Games" and one for "Open Challenges"
 
 <sub>./src/SideNav.scss</sub>
 ```scss
+.SideNav {
+  //...
 
+  .tabs-headers {
+    width: 100%;
+    display: flex;
+    justify-content: space-around;
+    margin-top: 10px;
+    
+    & > div {
+      margin: 5px;
+      padding: 5px;
+
+      border: 1px solid white;
+      border-radius: 3px;
+      background-color: #fff8;
+      cursor: pointer;
+
+      &:hover {
+        background-color: #0008;
+      }
+      &.selected {
+        background-color: #8888;
+      }
+    }
+  }
+}
 ```
 
 and we'll need to load games with an empty player field
@@ -2444,12 +2478,14 @@ and we'll need to load games with an empty player field
 ```js
 //...
 
-export const loadChallenges = ()=> {
+export const loadChallenges = ()=>
   Promise.all([
-    db.collection('games').where('b', '==', ''),
-    db.collection('games').where('w', '==', '')
-  ]).then( snaps=> snaps.map(snap => snap.docs).flat() )
-};
+    db.collection('games').where('b', '==', '').get(),
+    db.collection('games').where('w', '==', '').get()
+  ]).then( snaps=>
+    snaps.map(snap => snap.docs).flat()
+         .map(game => ({ ...game.data(), id: game.id }))
+  );
 ```
 
 which we will need a sample of in the collection (go ahead and make one from the firebase console)
@@ -2470,14 +2506,25 @@ import { loadChallenges } from './network';
   //...
 
   useEffect(()=> {
-    if( currentTab === 'join-list' )
-      loadChallenges().then( cs=> setChallenges(cs) );
-  }, [currentTab]);
+    if( user && (currentTab === 'join-list') )
+      loadChallenges()
+      .then( cs=> setChallenges(cs) )
+      .catch(e => console.error(e) )
+  }, [user, currentTab]);
 
   //...
 
-    <blah blah blah />
-
+        {currentTab === 'join-list' && (
+           <div className='join-list'>
+             {challenges.map((challenge)=> (
+                <div key={challenge.id} onClick={()=> joinGame(challenge.id)}>
+                  {challenge.wname || 'OPEN'} v {challenge.bname || 'OPEN'}
+                  <StaticBoard pieces={challenge.pieces} turn={challenge.turn}
+                               flipped={user.providerData[0].uid === challenge.b}/>
+                </div>
+              ))}
+           </div>
+         )}
   //...
 ```
 
@@ -2501,11 +2548,20 @@ which we need to be able to join
   //...
 ```
 
-and we can also trigger a refresh on the `games-list` tab when entered
+and we can also trigger a refresh on the `games-list` tab when entered the same way we did with the open challenges, but now also filtering the open games
 
 
 ```jsx
-useEffect ... 
+  //...
+
+  useEffect(()=>{
+    if( user && (currentTab === 'games-list') )
+      loadGames(user.providerData[0].uid)
+      .then((games)=> setMyGames(games.filter(game => game.w && game.b)))
+      .catch(e => console.error(e) )
+  }, [user, currentTab]);
+
+  //...
 ```
 
 and move the user back to the `games-list` when they join a game

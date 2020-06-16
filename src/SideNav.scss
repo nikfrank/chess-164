@@ -93,4 +93,28 @@
       cursor: pointer;
     }
   }
+
+  .tabs-headers {
+    width: 100%;
+    display: flex;
+    justify-content: space-around;
+    margin-top: 10px;
+    
+    & > div {
+      margin: 5px;
+      padding: 5px;
+
+      border: 1px solid white;
+      border-radius: 3px;
+      background-color: #fff8;
+      cursor: pointer;
+
+      &:hover {
+        background-color: #0008;
+      }
+      &.selected {
+        background-color: #8888;
+      }
+    }
+  }
 }
