@@ -436,7 +436,7 @@ to use `Droppable`, we'll replace the `div.sqaure` we have earlier with it
 
 we'll also set the key to update whenever the piece updates, in order to trigger a render (we need to render prop values to the `Draggable` for it to work on the next move(s)) while still being sufficiently unique.
 
-this key trick (seen here)[https://stackoverflow.com/questions/30626030/can-you-force-a-react-component-to-rerender-without-calling-setstate] is necessary because internally `react-dnd` uses `React.memo` for some of the values we pass it (to its hooks).
+this key trick [seen here](https://stackoverflow.com/questions/30626030/can-you-force-a-react-component-to-rerender-without-calling-setstate) is necessary because internally `react-dnd` uses `React.memo` for some of the values we pass it (to its hooks).
 
 
 ### showing the piece while being dragged (preview image)
