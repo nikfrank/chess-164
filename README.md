@@ -57,7 +57,7 @@ import Board from './Board';
 
 function App() {
   return (
-    <div className="App">
+    <div className='App'>
       <Board />
     </div>
   );
@@ -91,7 +91,7 @@ function Board() {
   const [pieces, setPieces] = useState(initPieces)
   
   return (
-    <div className="Board">
+    <div className='Board'>
       {pieces.map((row, rank)=> (
          <div className='rank' key={rank}>
            {row.map((piece, file)=> (
@@ -152,7 +152,7 @@ function Board() {
   const [pieces, setPieces] = useState(initPieces)
   
   return (
-    <div className="Board">
+    <div className='Board'>
       {pieces.map((row, rank)=> (
          <div className='rank' key={rank}>
            {row.map((piece, file)=> (
@@ -200,7 +200,7 @@ function Board() {
   }, [selected]);
   
   return (
-    <div className="Board">
+    <div className='Board'>
 
 //...
 
@@ -304,7 +304,7 @@ import Board from './Board';
 
 function App() {
   return (
-    <div className="App">
+    <div className='App'>
       <DndProvider backend={HTML5Backend}>
         <Board />
       </DndProvider>
@@ -406,7 +406,7 @@ to use `Droppable`, we'll replace the `div.sqaure` we have earlier with it
   });
 
   return (
-    <div className="Board">
+    <div className='Board'>
       {pieces.map((row, rank)=> (
          <div className='rank' key={rank}>
            {row.map((piece, file)=> (
@@ -513,7 +513,7 @@ const Game = ()=>{
 
 function App() {
   return (
-    <div className="App">
+    <div className='App'>
       <DndProvider backend={HTML5Backend}>
         <Game />
       </DndProvider>
@@ -1904,7 +1904,7 @@ function App() {
   }, []);
     
   return (
-    <div className="App">
+    <div className='App'>
       <SideNav user={user} onSelectGame={g=> console.log(g)}/>
       <DndProvider backend={HTML5Backend}>
         <Game />
@@ -2235,6 +2235,8 @@ const Game = ({ remoteGame })=>{
           Array(8).fill(0).map((_,i)=> g.pieces.slice(i*8, 8+ i*8))
         );
         setTurnLocal(g.turn);
+        setMovesLocal(g.moves);
+        setFlipped(g.b === user?.providerData[0].uid);
       } );
     }
   }, [remoteGame]);
@@ -2265,12 +2267,13 @@ import Piece from 'react-chess-pieces';
 
 const RANKS = Array(8).fill(0);
 
-function StaticBoard({ pieces, turn, flipped }){
+function StaticBoard({ pieces, flipped }){
   return (
     <div className='Board Static'
          style={{ flexDirection: flipped ? 'column' : 'column-reverse'}}>
       {RANKS.map((_, rank)=> (
-         <div className='rank' key={rank}>
+         <div className='rank' key={rank}
+              style={{ flexDirection: flipped ? 'row-reverse' : 'row'}}>>
            {pieces.slice(rank*8, rank*8+8).map((piece, file)=> (
               <div key={''+rank+''+file+''+piece} className='square'>
                 <Piece piece={piece}/>
@@ -2298,9 +2301,9 @@ so we have to `slice` them apart when rendering
   &.Static {
     width: 30vw;
     height: 30vw;
-    maxWidth: 250px;
-    maxHeight: 250px;
-    margin: 20px auto;
+    max-width: 250px;
+    max-height: 250px;
+    margin: 30px auto;
   }
 }
 ```
@@ -2318,7 +2321,7 @@ and we'll render it from `SideNav`
             <div key={game.id} onClick={()=> onSelectGame(game.id)}
                  className='static-game'>
               {game.wname} vs {game.bname}
-              <StaticBoard pieces={game.pieces} turn={game.turn}
+              <StaticBoard pieces={game.pieces}
                            flipped={user.providerData[0].uid === game.b}/>
             </div>
           ))}
@@ -2338,7 +2341,7 @@ and we'll render it from `SideNav`
     overflow-y: auto;
 
     .static-game {
-      max-height: 300px;
+      max-height: 320px;
       cursor: pointer;
     }
   }
@@ -2420,7 +2423,10 @@ function Board({
 
   //...
 
-    <div className="Board" style={{ flexDirection: flipped ? 'column' : 'column-reverse' }}>
+    <div className='Board' style={{ flexDirection: flipped ? 'column' : 'column-reverse' }}>
+      {pieces.map((row, rank)=> (
+        <div className='rank' key={rank}
+             style={{ flexDirection: flipped ? 'row-reverse' : 'row'}}>
 
   //...
 ```
@@ -2548,7 +2554,7 @@ import { loadChallenges } from './network';
              {challenges.map((challenge)=> (
                 <div key={challenge.id} onClick={()=> acceptChallenge(challenge)}>
                   {challenge.wname || 'OPEN'} v {challenge.bname || 'OPEN'}
-                  <StaticBoard pieces={challenge.pieces} turn={challenge.turn}
+                  <StaticBoard pieces={challenge.pieces}
                                flipped={user.providerData[0].uid === challenge.b}/>
                 </div>
               ))}
@@ -2628,7 +2634,10 @@ and move the user back to the `games-list` when they join a game
 so they can see their newly joined game!
 
 
-now if our users could only create a game, we'd have a fully functional online chess app
+now if our users could only create a game, we'd have a fully functional online chess app.
+
+
+Also, as an exercise, let's indicate to the user somehow whose turn it will be when they join the game (be creative!)
 
 
 
@@ -2665,7 +2674,8 @@ import NewGameForm from './NewGameForm';
 
 
         currentTab === 'new-game' &&
-          <NewGameForm value={newGame} onChange={setNewGame} onSubmit={makeNewGame} />
+          <NewGameForm value={newGame} user={user}
+                       onChange={setNewGame} onSubmit={makeNewGame} />
 
   //...
 ```
@@ -2674,19 +2684,113 @@ import NewGameForm from './NewGameForm';
 
 <sub>./src/NewGameForm.js</sub>
 ```jsx
+import React from 'react';
 
-my color (w/b)
-            initPieces / moves
-            turn
-            opponent (by github id)
+import StaticBoard from './StaticBoard';
+
+import { initPositions } from './chess-util';
+const initPositionKeys = Object.keys(initPositions);
+
+function NewGameForm({ value, onChange, onSubmit, userId }){  
+  return (
+    <div className='NewGameForm'>
+      My Color
+      <select value={value.b === userId ? 'b' : 'w'}
+              onChange={e=> onChange({
+                  ...value,
+                  [e.target.value]: userId,
+                  [e.target.value === 'b' ? 'w' : 'b']: '',
+                })}>
+        <option value='b'>Black</option>
+        <option value='w'>White</option>
+      </select>
+
+      <hr/>
+      
+      Initial Position
+      <select value={value.initialPosition}
+              onChange={e=> onChange({
+                  ...value,
+                  initialPosition: e.target.value,
+                  ...initPositions[e.target.value],
+                })}>
+        {initPositionKeys.map(key=> (
+           <option value={key} key={key}>{initPositions[key].name}</option>
+        ))}
+      </select>
+      <StaticBoard pieces={value.pieces || initPositions.standard.pieces}
+                   flipped={value.b === userId}/>
 
 
+      <hr/>
+      
+      Whose Turn
+      <select value={value.turn || 'w'}
+              onChange={e=> onChange({ ...value, turn: e.target.value })}>
+        <option value='b'>Black</option>
+        <option value='w'>White</option>
+      </select>
+
+      <hr/>
+
+      <button onClick={()=> onSubmit({
+          [value.b === userId ? 'b' : 'w']: userId,
+          [value.b === userId ? 'w' : 'b']: '',
+          pieces: initPositions.standard.pieces,
+          moves: [],
+          turn: 'w',
+          ...value,
+        })}>Make New Game</button>
+
+    </div>
+  );
+};
+
+export default NewGameForm;
 ```
 
 
 <sub>./src/NewGameForm.scss</sub>
 ```scss
+/* style is all about the CSS rules you don't use */
 ```
+
+
+we can write in some initial positions our users will want to create games in
+
+<sub>./src/chess-util.js</sub>
+```js
+//...
+
+export const initPositions = {
+  standard: {
+    pieces: initPieces.flat(),
+    moves: [],
+    name: 'Standard',
+    turn: 'w',
+  },
+  
+  knightOdds: {
+    pieces: [
+      ['R',  '', 'B', 'Q', 'K', 'B', 'N', 'R'],
+      ['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'],
+      [ '',  '',  '',  '',  '',  '',  '',  ''],
+      [ '',  '',  '',  '',  '',  '',  '',  ''],
+      [ '',  '',  '',  '',  '',  '',  '',  ''],
+      [ '',  '',  '',  '',  '',  '',  '',  ''],
+      ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
+      ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
+    ].flat(),
+    moves: [],
+    name: 'Knight Odds',
+  },
+
+  //...
+```
+
+here I'm flattening the `pieces` to work with `StaticBoard` and to send to the firebase
+
+(only our live `Game` `Board` really has any use for the nested version)
 
 
 
@@ -2694,15 +2798,37 @@ and a network call to actually create the new game.
 
 <sub>./src/network.js</sub>
 ```js
+//...
 
+export const createGame = (game)=> db.collection('games').add(game);
 ```
 
-which we can use to finish our `makeNewGame` callback
+which we can use to finish our `makeNewGame` callback and forward the user to the "Open Challenges" tab where that new game should show up.
+
 
 <sub>./src/SideNav.js</sub>
 ```jsx
+//...
 
+import { loginWithGithub, loadGames, loadChallenges, joinGame, createGame } from './network';
+
+  //...
+
+  const makeNewGame = useCallback((game)=>{
+    createGame({
+      ...game,
+      [game.b? 'bname':'wname']: nickname,
+    }).then(()=> setCurrentTab('join-list'));
+  }, [nickname]);
+
+  //...
 ```
+
+of course we also have to graft on the user's `nickname`!
+
+
+precocious students may try joining their own game and getting a React duplicate key bug - perhaps the more precocious of them will solve it as well.
+
 
 
 

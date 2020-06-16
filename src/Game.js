@@ -64,6 +64,7 @@ const Game = ({ remoteGame, user })=>{
           Array(8).fill(0).map((_,i)=> g.pieces.slice(i*8, 8+ i*8))
         );
         setTurnLocal(g.turn);
+        setMovesLocal(g.moves);
         setFlipped(g.b === user?.providerData[0].uid);
       } );
     }

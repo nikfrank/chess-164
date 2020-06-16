@@ -89,7 +89,8 @@ function Board({
   return (
     <div className="Board" style={{ flexDirection: flipped ? 'column' : 'column-reverse' }}>
       {pieces.map((row, rank)=> (
-         <div className='rank' key={rank}>
+        <div className='rank' key={rank}
+             style={{ flexDirection: flipped ? 'row-reverse' : 'row'}}>
            {row.map((piece, file)=> (
               <Droppable
                   key={''+rank+''+file+''+piece}

@@ -49,25 +49,4 @@ export const joinGame = ({ gameId, userId, asPlayer, nickname })=>
     .doc(gameId)
     .update({ [asPlayer]: userId, [asPlayer+'name']: nickname });
 
-export const createGame = ()=>
-  db.collection('games').add({
-    "timeRules": "3|2",
-    "stakes": "tree fiddy",
-    "pieces": [
-      'R','N','B','Q','K','B','N','R',
-      'P','P','P','P','P','P','P','P',
-      '','','','','','','','',
-      '','','','','','','','',
-      '','','','','','','','',
-      '','','','','','','','',
-      'p','p','p','p','p','p','p','p',
-      'r','n','b','q','k','b','n','r',
-    ],
-    "moves": [],
-    "b": "50657694",
-    "w": "6264797",
-    "bname": "dan",
-    "wname": "nik"
-  })
-    .then(()=> console.log('Document successfully written!'))
-    .catch((error)=> console.error('Error writing document: ', error));
+export const createGame = (game)=> db.collection('games').add(game);

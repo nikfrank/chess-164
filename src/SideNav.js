@@ -5,7 +5,7 @@ import githubLogo from './github.svg'
 import StaticBoard from './StaticBoard';
 import NewGameForm from './NewGameForm';
 
-import { loginWithGithub, loadGames, loadChallenges, joinGame } from './network';
+import { loginWithGithub, loadGames, loadChallenges, joinGame, createGame } from './network';
 
 function SideNav({ user, onSelectGame }) {
   const [open, setOpen] = useState(!false);
@@ -43,10 +43,12 @@ function SideNav({ user, onSelectGame }) {
     }).then(()=> setCurrentTab('games-list'));
   }, [user, nickname]);
 
-  const makeNewGame = useCallback(()=>{
-    console.log(newGame);
-    // createGame
-  }, [newGame]);
+  const makeNewGame = useCallback((game)=>{
+    createGame({
+      ...game,
+      [game.b? 'bname':'wname']: nickname,
+    }).then(()=> setCurrentTab('join-list'));
+  }, [nickname]);
 
   return (
     <div className={'SideNav '+(open ? 'open' : 'closed')}>
@@ -89,7 +91,9 @@ function SideNav({ user, onSelectGame }) {
               .map((game, i)=> (
                 <div key={game.id} onClick={()=> onSelectGame(game.id)} className='static-game'>
                   {game.wname} vs {game.bname}
-                  <StaticBoard pieces={game.pieces} turn={game.turn}
+                  <br/>
+                  {game.turn} to move
+                  <StaticBoard pieces={game.pieces}
                                flipped={user.providerData[0].uid === game.b}/>
                 </div>
               ))}
@@ -100,14 +104,17 @@ function SideNav({ user, onSelectGame }) {
             {challenges.map((challenge)=> (
                <div key={challenge.id} onClick={()=> acceptChallenge(challenge)}>
                  {challenge.wname || 'OPEN'} v {challenge.bname || 'OPEN'}
-                 <StaticBoard pieces={challenge.pieces} turn={challenge.turn}
+                 <br/>
+                 {challenge.turn} to move
+                 <StaticBoard pieces={challenge.pieces}
                               flipped={user.providerData[0].uid === challenge.b}/>
                </div>
              ))}
           </div>
           
           : currentTab === 'new-game' &&
-          <NewGameForm value={newGame} onChange={setNewGame} onSubmi={makeNewGame} />
+          <NewGameForm value={newGame} userId={user.providerData[0].uid}
+                       onChange={setNewGame} onSubmit={makeNewGame} />
          }
        </div>        
     </div>

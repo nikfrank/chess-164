@@ -12,6 +12,78 @@ export const initPieces = [
   ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
 ];
 
+
+export const initPositions = {
+  standard: {
+    pieces: initPieces.flat(),
+    moves: [],
+    name: 'Standard',
+    turn: 'w',
+  },
+  
+  knightOdds: {
+    pieces: [
+      ['R',  '', 'B', 'Q', 'K', 'B', 'N', 'R'],
+      ['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'],
+      [ '',  '',  '',  '',  '',  '',  '',  ''],
+      [ '',  '',  '',  '',  '',  '',  '',  ''],
+      [ '',  '',  '',  '',  '',  '',  '',  ''],
+      [ '',  '',  '',  '',  '',  '',  '',  ''],
+      ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
+      ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
+    ].flat(),
+    moves: [],
+    name: 'Knight Odds',
+  },
+
+  rookOdds: {
+    pieces: [
+      [ '', 'N', 'B', 'Q', 'K', 'B', 'N', 'R'],
+      ['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'],
+      [ '',  '',  '',  '',  '',  '',  '',  ''],
+      [ '',  '',  '',  '',  '',  '',  '',  ''],
+      [ '',  '',  '',  '',  '',  '',  '',  ''],
+      [ '',  '',  '',  '',  '',  '',  '',  ''],
+      ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
+      ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
+    ].flat(),
+    moves: [],
+    name: 'Rook Odds',
+  },
+
+  queenOdds: {
+    pieces: [
+      ['R', 'N', 'B',  '', 'K', 'B', 'N', 'R'],
+      ['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'],
+      [ '',  '',  '',  '',  '',  '',  '',  ''],
+      [ '',  '',  '',  '',  '',  '',  '',  ''],
+      [ '',  '',  '',  '',  '',  '',  '',  ''],
+      [ '',  '',  '',  '',  '',  '',  '',  ''],
+      ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
+      ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
+    ].flat(),
+    moves: [],
+    name: 'Queen Odds',
+  },
+
+  evansGambit: {
+    pieces: [
+      ['R', 'N', 'B', 'Q', 'K',  '',  '', 'R'],
+      ['P',  '', 'P', 'P',  '', 'P', 'P', 'P'],
+      [ '',  '',  '',  '',  '', 'N',  '',  ''],
+      [ '', 'P', 'B',  '', 'P',  '',  '',  ''],
+      [ '',  '', 'b',  '', 'p',  '',  '',  ''],
+      [ '',  '', 'n',  '',  '',  '',  '',  ''],
+      ['p', 'p', 'p', 'p',  '', 'p', 'p', 'p'],
+      ['r',  '', 'b', 'q', 'k',  '', 'n', 'r'],
+    ].flat(),
+    moves: ['Pe2e4', 'pe7e5', 'Ng1f3', 'nb8c6', 'Bf1c4', 'bf8c5', 'Pb2b4'],
+    name: 'Evans Gambit',
+    turn: 'b',
+  },
+};
+
+
 export const calculateFEN = (pieces, turn, moves)=> {
   const fenPieces =
     pieces.reduce((fen, rank)=>
