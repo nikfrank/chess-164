@@ -7,15 +7,16 @@ import StaticBoard from './StaticBoard';
 import { loginWithGithub, loadGames } from './network';
 
 function SideNav({ user, onSelectGame }) {
-
   const [open, setOpen] = useState(!false);
   const [nickname, setNickname] = useState(localStorage.nickname || '');
   const [myGames, setMyGames] = useState([]);
+  const [currentTab, setCurrentTab] = useState('games-list');
   
   useEffect(()=>{
-    if(user) loadGames(user.providerData[0].uid).then((games)=>{
-      setMyGames(games);
-    }).catch(e => console.error(e) );
+    if(user)
+      loadGames(user.providerData[0].uid)
+        .then((games)=> setMyGames(games))
+        .catch(e => console.error(e) )
   }, [user]);
 
   useEffect(()=>{ localStorage.nickname = nickname }, [nickname]);
@@ -38,18 +39,31 @@ function SideNav({ user, onSelectGame }) {
            </>
          )}
       </div>
-      <div style={{ display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
-        {myGames
-          .map(g => g.data())
-          .map((game, i)=> (
-            <div key={i} onClick={()=> onSelectGame(myGames[i].id)}
-                 style={{ height: 300 }}>
-              {game.wname} vs {game.bname}
-              <StaticBoard pieces={game.pieces} turn={game.turn}
-                           flipped={user.providerData[0].uid === game.b}/>
-            </div>
-          ))}
+      
+      <div className='tabs-headers'>
+        <div onClick={()=> setCurrentTab('games-list')}>Games List</div>
+        <div onClick={()=> setCurrentTab('join-list')}>Open Challenges</div>
       </div>
+
+      {currentTab === 'games-list' && (
+         <div className='games-list'>
+           {myGames
+             .map((game, i)=> (
+               <div key={game.id} onClick={()=> onSelectGame(game.id)} className='static-game'>
+                 {game.wname} vs {game.bname}
+                 <StaticBoard pieces={game.pieces} turn={game.turn}
+                              flipped={user.providerData[0].uid === game.b}/>
+               </div>
+             ))}
+         </div>
+      )}
+
+      {currentTab === 'join-list' && (
+         <div className='join-list'>
+           load games with empty b / w
+         </div>
+      )}
+      
     </div>
   );
 }

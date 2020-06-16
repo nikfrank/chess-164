@@ -33,7 +33,7 @@ export const loadGames = (userId)=>
     db.collection('games')
       .where('b', '==', userId).get()
       .then(snap => snap.docs)
-  ]).then(g => g.flat());
+  ]).then(g => g.flat().map(game => ({ ...game.data(), id: game.id })) );
 
 export const createGame = ()=>
   db.collection('games').add({

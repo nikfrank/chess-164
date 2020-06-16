@@ -82,4 +82,15 @@
       }
     }
   }
+
+  .games-list {
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+
+    .static-game {
+      max-height: 300px;
+      cursor: pointer;
+    }
+  }
 }

@@ -2010,7 +2010,7 @@ we'll be using this as a starting point for the `loadGames` function later, so d
 
 
 
-### sideNav to view / join / create game
+### SideNav to view / join / create game
 
 
 we'll style our login button / status into the `SideNav`
@@ -2044,6 +2044,9 @@ import githubLogo from './github.svg'
          )}
       </div>
 ```
+
+go ahead and take the github svg from this repo - it is provided by github with some fair conditions of use (here as an integration).
+
 
 <sub>./src/src/SideNav.scss</sub>
 ```scss
@@ -2104,7 +2107,8 @@ export const loadGames = (userId)=>
   db.collection('games')
     .where('w', '==', userId)
     .get()
-    .then(snap => snap.docs);
+    .then(snap => snap.docs)
+    .then(games=> games.map(game => ({ ...game.data(), id: game.id })));
 
 ```
 
@@ -2120,18 +2124,18 @@ import { loginWithGithub, loadGames } from './network';
   const [myGames, setMyGames] = useState([]);
   
   useEffect(()=>{
-    if(user) loadGames(user.providerData[0].uid).then((games)=>{
-      setMyGames(games);
-    }).catch(e => console.error(e) );
+    if(user)
+      loadGames(user.providerData[0].uid)
+        .then((games)=> setMyGames(games))
+        .catch(e => console.error(e) );
   }, [user]);
 
   //...
 
       <div>
         {myGames
-          .map(g => g.data())
           .map((game, i)=> (
-            <div key={i} onClick={()=> onSelectGame(myGames[i].id)}>
+            <div key={game.id} onClick={()=> onSelectGame(game.id)}>
               {game.wname} vs {game.bname}
             </div>
           ))}
@@ -2144,7 +2148,7 @@ import { loginWithGithub, loadGames } from './network';
 
 in the next section, we'll build a `StaticBoard` component to display games.
 
-If you made yourself the black player in any games, you'll notice we have a bug! (if you haven't, got make one)
+If you made yourself the black player in any games, you'll notice we have a bug! (if you haven't, go make one)
 
 we need to load games where the user is white OR black
 
@@ -2161,7 +2165,7 @@ export const loadGames = (userId)=>
     db.collection('games')
       .where('b', '==', userId).get()
       .then(snap => snap.docs)
-  ]).then(g => g.flat());
+  ]).then(g => g.flat().map(game => ({ ...game.data(), id: game.id })));
 ```
 
 much better.
@@ -2243,56 +2247,106 @@ in the `useEffect`, we return the `unsubscribe` callback provided by firebase's 
 
 that's all great for now because we can add data on the firebase console - later we'll need to give the user the choice to make a new game.
 
+note that we've assumed the `SideNav` will send along the firebase document id as the selection, as we coded that earlier.
+
+
 
 
 ### StaticBoard display
 
-Here we'll redo some of the work from `Board`, or our first attaempt at a board, to make a heads-up static display of the game in the `SideNav`
+Here we'll reuse some of the work from `Board` to make a heads-up static display of the game
 
 `$ touch src/StaticBoard.js`
 
 <sub>./src/StaticBoard.js</sub>
 ```jsx
+import React from 'react';
+import Piece from 'react-chess-pieces';
 
+const RANKS = Array(8).fill(0);
+
+function StaticBoard({ pieces, turn, flipped }){
+  return (
+    <div className='Board Static'
+         style={{ flexDirection: flipped ? 'column' : 'column-reverse'}}>
+      {RANKS.map((_, rank)=> (
+         <div className='rank' key={rank}>
+           {pieces.slice(rank*8, rank*8+8).map((piece, file)=> (
+              <div key={''+rank+''+file+''+piece} className='square'>
+                <Piece piece={piece}/>
+              </div>
+            ))}
+         </div>
+       ))}
+    </div>
+  );
+}
+
+export default StaticBoard;
 ```
 
+remember that now our pieces are going to be from firebase, and are `[64]` not `[8][8]`
+
+so we have to `slice` them apart when rendering
 
 
-### creating / joining games
+<sub>./src/Board.scss</sub>
+```scss
+.Board {
+  //...
 
-let's split our `SideNav` into two tabs
+  &.Static {
+    width: 30vw;
+    height: 30vw;
+    maxWidth: 250px;
+    maxHeight: 250px;
+    margin: 20px auto;
+  }
+}
+```
+
+and we'll render it from `SideNav`
+
 
 <sub>./src/SideNav.js</sub>
 ```jsx
+  //...
 
+      <div className='games-list'>
+        {myGames
+          .map((game, i)=> (
+            <div key={game.id} onClick={()=> onSelectGame(game.id)}
+                 className='static-game'>
+              {game.wname} vs {game.bname}
+              <StaticBoard pieces={game.pieces} turn={game.turn}
+                           flipped={user.providerData[0].uid === game.b}/>
+            </div>
+          ))}
+      </div>
+
+  //...
 ```
 
-one for "My Games" and one for "Open Challenges"
+<sub>./src/SideNav.scss</sub>
+```scss
+.SideNav {
+  //...
 
-```jsx
+  .games-list {
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
 
+    .static-game {
+      max-height: 300px;
+      cursor: pointer;
+    }
+  }
+}
 ```
 
+these games only update when the user changes (on login) - if you want them all to sync update, you can use what you learned about `.onSnapshot` from the `Game` sync section - or code an occasional poll as an exercise.
 
-we'll need a "Create Game" button
-
-<sub>./src/SideNav.js</sub>
-```jsx
-
-```
-
-and a fullscreen view to fill in the details for the new game
-
-```jsx
-
-```
-
-and a network call to actually create the new game.
-
-<sub>./src/network.js</sub>
-```js
-
-```
 
 
 ### flipping the board
@@ -2311,26 +2365,204 @@ const Game = ({ remoteGame, user })=>{
 
   const [flipped, setFlipped] = useState(false);
 
+
+     //... onSnapshot
+     
         setFlipped(g.b === user?.providerData[0].uid);
 
   }, [remoteGame, user]);
 
 
- <Board flipped={flipped} .../>
+  //...
+  
+     <Board flipped={flipped} ... />
+
+  //...
 ```
 
 <sub>./src/Board.js</sub>
 ```jsx
+//...
 
 function Board({
   pieces, onSelect, selected, onClick, onDragEnd, onDragStart,
   promotion, promotionWidget, markers, flipped,
 }) {
 
+  //...
 
     <div className="Board" style={{ flexDirection: flipped ? 'column' : 'column-reverse' }}>
 
+  //...
 ```
+
+
+
+
+### joining games
+
+let's split our `SideNav` into two tabs
+
+<sub>./src/SideNav.js</sub>
+```jsx
+  //...
+
+  const [currentTab, setCurrentTab] = useState('games-list');
+
+  //...
+
+      <div className='tabs-headers'>
+        <div onClick={()=> setCurrentTab('games-list')}>Games List</div>
+        <div onClick={()=> setCurrentTab('join-list')}>Open Challenges</div>
+      </div>
+
+      {currentTab === 'games-list' && (
+         <div className='games-list'>
+           ...
+         </div>
+      )}
+      {currentTab === 'join-list' && (
+         <div className='join-list'>
+           load games with empty b / w
+         </div>
+      )}
+
+  //...
+
+```
+
+one for "My Games" and one for "Open Challenges"
+
+<sub>./src/SideNav.scss</sub>
+```scss
+
+```
+
+and we'll need to load games with an empty player field
+
+<sub>./src/network.js</sub>
+```js
+//...
+
+export const loadChallenges = ()=> {
+  Promise.all([
+    db.collection('games').where('b', '==', ''),
+    db.collection('games').where('w', '==', '')
+  ]).then( snaps=> snaps.map(snap => snap.docs).flat() )
+};
+```
+
+which we will need a sample of in the collection (go ahead and make one from the firebase console)
+
+
+so now we can load them when the `join-list` tab is entered
+
+<sub>./src/SideNav.js</sub>
+```jsx
+//...
+
+import { loadChallenges } from './network';
+
+  //...
+  
+  const [challenges, setChallenges] = useState([]);
+  
+  //...
+
+  useEffect(()=> {
+    if( currentTab === 'join-list' )
+      loadChallenges().then( cs=> setChallenges(cs) );
+  }, [currentTab]);
+
+  //...
+
+    <blah blah blah />
+
+  //...
+```
+
+which we need to be able to join
+
+```jsx
+
+  //...
+
+  const acceptChallenge = useCallback(challenge=> {
+    const BorW = challenge.b ? 'w' : 'b';
+    db.collection('games').doc(challenge.id).update({
+      [BorW]: user.providers[0].uid,
+    });
+  }, []);
+
+  //...
+
+    <blah blah blah />
+
+  //...
+```
+
+and we can also trigger a refresh on the `games-list` tab when entered
+
+
+```jsx
+useEffect ... 
+```
+
+and move the user back to the `games-list` when they join a game
+
+```jsx
+
+```
+
+select the new game, and highlight it in the list
+
+```jsx
+
+```
+
+
+now if our users could only create a game, we'd have a fully functional online chess game
+
+
+
+### create game
+
+
+we'll need a "Create Game" tab as well
+
+<sub>./src/SideNav.js</sub>
+```jsx
+
+```
+
+and a `SideNav` tab to fill in the details for the new game
+
+<sub>./src/SideNav.js</sub>
+```jsx
+
+```
+
+
+and a network call to actually create the new game.
+
+<sub>./src/network.js</sub>
+```js
+
+```
+
+
+
+### securing moves, joins, and creates
+
+... we can move for the wrong player
+
+we need to check the right things from our security rules
+
+...
+
+
+...
+
 
 
 ### game status
