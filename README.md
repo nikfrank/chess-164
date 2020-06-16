@@ -2348,6 +2348,35 @@ and we'll render it from `SideNav`
 these games only update when the user changes (on login) - if you want them all to sync update, you can use what you learned about `.onSnapshot` from the `Game` sync section - or code an occasional poll as an exercise.
 
 
+when you have too many games and need to scroll, you can wrap the tabs JSX with
+
+<sub>./src/SideNav.js</sub>
+```jsx
+  <div className='active-tab'>
+    {currentTab === ... ? yada yada yada }
+  </div>
+```
+
+and style it to scroll with
+
+<sub>./src/SideNav.scss</sub>
+```scss
+.SideNav {
+  //...
+
+  display: flex;
+  flex-direction: column;
+
+  .active-tab {
+    overflow-y: auto;
+    flex-grow: 1;
+  }
+
+  //...
+
+}
+```
+
 
 ### flipping the board
 
@@ -2606,25 +2635,72 @@ now if our users could only create a game, we'd have a fully functional online c
 ### create game
 
 
-we'll need a "Create Game" tab as well
+we'll need a "Create Game" tab as well - this tab is complex enough to warrant a component
 
 <sub>./src/SideNav.js</sub>
 ```jsx
+//...
 
+import NewGameForm from './NewGameForm';
+
+  //...
+
+  const [newGame, setNewGame] = useState({});
+
+  //...
+
+  const makeNewGame = useCallback(()=>{
+    console.log(newGame);
+    // createGame
+  }, [newGame]);
+  
+  //...
+
+         <div onClick={()=> setCurrentTab('new-game')}
+              className={currentTab === 'new-game' ? 'selected' : ''}>
+           New Game
+         </div>
+
+  //...
+
+
+        currentTab === 'new-game' &&
+          <NewGameForm value={newGame} onChange={setNewGame} onSubmit={makeNewGame} />
+
+  //...
 ```
 
-and a `SideNav` tab to fill in the details for the new game
+`$ touch src/NewGameForm.js src/NewGameForm.scss`
 
-<sub>./src/SideNav.js</sub>
+<sub>./src/NewGameForm.js</sub>
 ```jsx
 
+my color (w/b)
+            initPieces / moves
+            turn
+            opponent (by github id)
+
+
 ```
+
+
+<sub>./src/NewGameForm.scss</sub>
+```scss
+```
+
 
 
 and a network call to actually create the new game.
 
 <sub>./src/network.js</sub>
 ```js
+
+```
+
+which we can use to finish our `makeNewGame` callback
+
+<sub>./src/SideNav.js</sub>
+```jsx
 
 ```
 

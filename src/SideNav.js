@@ -3,6 +3,7 @@ import './SideNav.scss';
 import githubLogo from './github.svg'
 
 import StaticBoard from './StaticBoard';
+import NewGameForm from './NewGameForm';
 
 import { loginWithGithub, loadGames, loadChallenges, joinGame } from './network';
 
@@ -12,6 +13,7 @@ function SideNav({ user, onSelectGame }) {
   const [myGames, setMyGames] = useState([]);
   const [currentTab, setCurrentTab] = useState('games-list');
   const [challenges, setChallenges] = useState([]);
+  const [newGame, setNewGame] = useState({});
   
   useEffect(()=>{
     if( user && (currentTab === 'games-list') )
@@ -41,6 +43,11 @@ function SideNav({ user, onSelectGame }) {
     }).then(()=> setCurrentTab('games-list'));
   }, [user, nickname]);
 
+  const makeNewGame = useCallback(()=>{
+    console.log(newGame);
+    // createGame
+  }, [newGame]);
+
   return (
     <div className={'SideNav '+(open ? 'open' : 'closed')}>
       <div className='toggle' onClick={toggle}/>
@@ -58,43 +65,51 @@ function SideNav({ user, onSelectGame }) {
          )}
       </div>
 
-      {user && (
-         <div className='tabs-headers'>
-           <div onClick={()=> setCurrentTab('games-list')}
-                className={currentTab === 'games-list' ? 'selected' : ''}>
-             Games List
-           </div>
-           <div onClick={()=> setCurrentTab('join-list')}
-                className={currentTab === 'join-list' ? 'selected' : ''}>
-             Open Challenges
-           </div>
+      {user && 
+       <div className='tabs-headers'>
+         <div onClick={()=> setCurrentTab('games-list')}
+              className={currentTab === 'games-list' ? 'selected' : ''}>
+           Games List
          </div>
-       )}
-         {currentTab === 'games-list' && (
-            <div className='games-list'>
-              {myGames
-                .map((game, i)=> (
-                  <div key={game.id} onClick={()=> onSelectGame(game.id)} className='static-game'>
-                    {game.wname} vs {game.bname}
-                    <StaticBoard pieces={game.pieces} turn={game.turn}
-                                 flipped={user.providerData[0].uid === game.b}/>
-                  </div>
-                ))}
-            </div>
-          )}
+         <div onClick={()=> setCurrentTab('join-list')}
+              className={currentTab === 'join-list' ? 'selected' : ''}>
+           Open Challenges
+         </div>
+         <div onClick={()=> setCurrentTab('new-game')}
+              className={currentTab === 'new-game' ? 'selected' : ''}>
+           New Game
+         </div>
+       </div>
+      }
 
-            {currentTab === 'join-list' && (
-               <div className='join-list'>
-                 {challenges.map((challenge)=> (
-                    <div key={challenge.id} onClick={()=> acceptChallenge(challenge)}>
-                      {challenge.wname || 'OPEN'} v {challenge.bname || 'OPEN'}
-                      <StaticBoard pieces={challenge.pieces} turn={challenge.turn}
-                                   flipped={user.providerData[0].uid === challenge.b}/>
-                    </div>
-                  ))}
+       <div className='active-tab'>
+         {currentTab === 'games-list' ? 
+          <div className='games-list'>
+            {myGames
+              .map((game, i)=> (
+                <div key={game.id} onClick={()=> onSelectGame(game.id)} className='static-game'>
+                  {game.wname} vs {game.bname}
+                  <StaticBoard pieces={game.pieces} turn={game.turn}
+                               flipped={user.providerData[0].uid === game.b}/>
+                </div>
+              ))}
+          </div>
+          
+          : currentTab === 'join-list' ? 
+          <div className='join-list'>
+            {challenges.map((challenge)=> (
+               <div key={challenge.id} onClick={()=> acceptChallenge(challenge)}>
+                 {challenge.wname || 'OPEN'} v {challenge.bname || 'OPEN'}
+                 <StaticBoard pieces={challenge.pieces} turn={challenge.turn}
+                              flipped={user.providerData[0].uid === challenge.b}/>
                </div>
-             )}
-               
+             ))}
+          </div>
+          
+          : currentTab === 'new-game' &&
+          <NewGameForm value={newGame} onChange={setNewGame} onSubmi={makeNewGame} />
+         }
+       </div>        
     </div>
   );
 }

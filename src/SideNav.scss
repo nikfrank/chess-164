@@ -7,6 +7,9 @@
   background-color: #3161a1;
   z-index: 10;
   transition: all 1s;
+
+  display: flex;
+  flex-direction: column;
   
   &.open {
     left: 0;
@@ -82,11 +85,15 @@
       }
     }
   }
-
+  
+  .active-tab {
+    overflow-y: auto;
+    flex-grow: 1;
+  }
+  
   .games-list {
     display: flex;
     flex-direction: column;
-    overflow-y: auto;
 
     .static-game {
       max-height: 300px;
