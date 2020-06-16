@@ -44,6 +44,10 @@ export const loadChallenges = ()=>
          .map(game => ({ ...game.data(), id: game.id }))
   );
 
+export const joinGame = ({ gameId, userId, asPlayer, nickname })=>
+  db.collection('games')
+    .doc(gameId)
+    .update({ [asPlayer]: userId, [asPlayer+'name']: nickname });
 
 export const createGame = ()=>
   db.collection('games').add({

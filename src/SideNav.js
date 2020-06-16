@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import './SideNav.scss';
 import githubLogo from './github.svg'
 
 import StaticBoard from './StaticBoard';
 
-import { loginWithGithub, loadGames, loadChallenges } from './network';
+import { loginWithGithub, loadGames, loadChallenges, joinGame } from './network';
 
 function SideNav({ user, onSelectGame }) {
   const [open, setOpen] = useState(!false);
@@ -31,10 +31,15 @@ function SideNav({ user, onSelectGame }) {
   
   const toggle = ()=> setOpen(o => !o);
 
-  const joinGame = (id)=>{
-    console.log(id);
-    // call network joinGame
-  };
+  const acceptChallenge = useCallback(challenge=> {
+    const asPlayer = challenge.b ? 'w' : 'b';
+    joinGame({
+      gameId: challenge.id,
+      userId: user.providerData[0].uid,
+      asPlayer,
+      nickname,
+    }).then(()=> setCurrentTab('games-list'));
+  }, [user, nickname]);
 
   return (
     <div className={'SideNav '+(open ? 'open' : 'closed')}>
@@ -81,7 +86,7 @@ function SideNav({ user, onSelectGame }) {
             {currentTab === 'join-list' && (
                <div className='join-list'>
                  {challenges.map((challenge)=> (
-                    <div key={challenge.id} onClick={()=> joinGame(challenge.id)}>
+                    <div key={challenge.id} onClick={()=> acceptChallenge(challenge)}>
                       {challenge.wname || 'OPEN'} v {challenge.bname || 'OPEN'}
                       <StaticBoard pieces={challenge.pieces} turn={challenge.turn}
                                    flipped={user.providerData[0].uid === challenge.b}/>

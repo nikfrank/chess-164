@@ -2517,7 +2517,7 @@ import { loadChallenges } from './network';
         {currentTab === 'join-list' && (
            <div className='join-list'>
              {challenges.map((challenge)=> (
-                <div key={challenge.id} onClick={()=> joinGame(challenge.id)}>
+                <div key={challenge.id} onClick={()=> acceptChallenge(challenge)}>
                   {challenge.wname || 'OPEN'} v {challenge.bname || 'OPEN'}
                   <StaticBoard pieces={challenge.pieces} turn={challenge.turn}
                                flipped={user.providerData[0].uid === challenge.b}/>
@@ -2530,20 +2530,34 @@ import { loadChallenges } from './network';
 
 which we need to be able to join
 
+
+<sub>./src/network.js</sub>
+```js
+//...
+
+export const joinGame = ({ gameId, userId, asPlayer, nickname })=>
+  db.collection('games')
+    .doc(gameId)
+    .update({ [asPlayer]: userId, [asPlayer+'name']: nickname });
+```
+
+<sub>./src/SideNav.js</sub>
 ```jsx
+//...
+
+import { loginWithGithub, loadGames, loadChallenges, joinGame } from './network';
 
   //...
 
   const acceptChallenge = useCallback(challenge=> {
-    const BorW = challenge.b ? 'w' : 'b';
-    db.collection('games').doc(challenge.id).update({
-      [BorW]: user.providers[0].uid,
+    const asPlayer = challenge.b ? 'w' : 'b';
+    joinGame({
+      gameId: challenge.id,
+      userId: user.providerData[0].uid,
+      asPlayer,
+      nickname,
     });
-  }, []);
-
-  //...
-
-    <blah blah blah />
+  }, [user, nickname]);
 
   //...
 ```
@@ -2567,17 +2581,25 @@ and we can also trigger a refresh on the `games-list` tab when entered the same 
 and move the user back to the `games-list` when they join a game
 
 ```jsx
+  //...
 
+  const acceptChallenge = useCallback(challenge=> {
+    const asPlayer = challenge.b ? 'w' : 'b';
+    joinGame({
+      gameId: challenge.id,
+      userId: user.providerData[0].uid,
+      asPlayer,
+      nickname,
+    }).then(()=> setCurrentTab('games-list'));
+  }, [user, nickname]);
+
+  //...
 ```
 
-select the new game, and highlight it in the list
-
-```jsx
-
-```
+so they can see their newly joined game!
 
 
-now if our users could only create a game, we'd have a fully functional online chess game
+now if our users could only create a game, we'd have a fully functional online chess app
 
 
 
