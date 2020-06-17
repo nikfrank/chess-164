@@ -3,35 +3,37 @@
 
 ## Agenda
 
- - 1p Build
-   - Board & Pieces
-   - making pieces draggable
-   - making squares droppable
-   - showing the piece while being dragged
-   - controlled component: Game -> Board
-   - Quick Refactor: App -> Game
-   - The Rules of Chess
-   - [FEN](https://en.wikipedia.org/wiki/Forsyth%E2%80%93Edwards_Notation) TDD
-   - calculating legal moves (chess.js)
-   - enforcing legal moves
-   - Promotion Widget
-   - Displaying legal moves on the Board
- - multiplayer online
-   - firebase getting started
-   - side nav games menu
-   - making data on the console
-   - SideNav to view / join / create game
-   - StaticBoard display
-   - flipping the board
-   - joining games
-   - create game
-   - securing moves, joins, and creates
-   - game status
-   - players display
+ - [1p Build](#1p-build)
+   - [Board & Pieces](#board-n-pieces)
+   - [making pieces draggable](#making-pieces-draggable)
+   - [making squares droppable](#making-squares-droppable)
+   - [showing the piece while being dragged](#showing-dragged)
+   - [controlled component: Game -> Board](#controlled-component)
+   - [Quick Refactor: App -> Game](#quick-refcator)
+   - [The Rules of Chess](#rules)
+   - [FEN TDD](#fen-tdd)
+   - [calculating legal moves (chess.js)](#calc-legal-moves)
+   - [enforcing legal moves](#enforcing-legal-moves)
+   - [Promotion Widget](#promotion-widget)
+   - [Displaying legal moves on the Board](#display-legal-moves)
+ - [multiplayer online](#multiplayer-online)
+   - [firebase getting started](#firebase-getting-started)
+   - [side nav games menu](#side-nav-games-menu)
+   - [making data on the console](#making-data)
+   - [SideNav to view / join / create game](#side-nav-tabs)
+   - [StaticBoard display](#static-board)
+   - [flipping the board](#flipping)
+   - [joining games](#joining)
+   - [create game](#creating)
+   - [securing moves, joins, and creates](#securing)
+   - [game status](#game-status)
+   - [players display](#players-display)
 
 
+<a name="1p-build"></a>
 ## 1p Build
 
+<a name="board-n-pieces"></a>
 ### Board & Pieces
 
 create-react-app
@@ -283,6 +285,7 @@ and we need to move the piece when the second click occurs
 //...
 ```
 
+<a name="making-pieces-draggable"></a>
 ### making pieces draggable
 
 `$ yarn add react-dnd react-dnd-html5-backend`
@@ -353,6 +356,7 @@ const Draggable = ({ rank, file, type, children }) => {
 //...
 ```
 
+<a name="making-squares-droppable"></a>
 ### making squares droppable
 
 
@@ -432,6 +436,7 @@ we'll also set the key to update whenever the piece updates, in order to trigger
 this key trick [seen here](https://stackoverflow.com/questions/30626030/can-you-force-a-react-component-to-rerender-without-calling-setstate) is necessary because internally `react-dnd` uses `React.memo` for some of the values we pass it (to its hooks).
 
 
+<a name="showing-dragged"></a>
 ### showing the piece while being dragged
 
 lastly, we'll want the user to feel like they're moving a real piece around, blundering just the same.
@@ -476,6 +481,7 @@ the `App` will maintain state of the game (`pieces`) and respond to events by up
 later, when we build arrows or hi-lighting features, they will work the same way.
 
 
+<a name="controlled-component"></a>
 ### controlled component: Game -> Board
 
 Before we build or import the logic for the game of chess (how the pieces move, is it stalemate?, etc) we want to build a decision hierarchy so we can change the rules later if we want.
@@ -742,7 +748,8 @@ fantastic. We should take a break now to defeat whoever is nearby at chess on ou
 
 ---
 
-### Quick Refactor
+<a name="quick-refactor"></a>
+### Quick Refactor: App -> Game
 
 It'll be more convenient now to think of our application structure (before it's too late!)
 
@@ -803,6 +810,7 @@ now we have a place for our chess game logic, and a first draft ontology for our
 
 ---
 
+<a name="rules"></a>
 ### The Rules of Chess
 
 
@@ -878,7 +886,8 @@ Our goal in doing this is to maintain our own state to allow any feature, to wri
 
 [see relevant github issue here](https://github.com/jhlywa/chess.js/issues/196)
 
-### FEN
+<a name="fen-tdd"></a>
+### FEN TDD
 
 to get chess.js to tell us what we want to know, we'll need to pass it the current board state. This can be achieved via the [FEN](https://en.wikipedia.org/wiki/Forsyth%E2%80%93Edwards_Notation) constructor API.
 
@@ -1228,6 +1237,7 @@ we've also invented a notation for chess moves which is a little different than 
 this was to improve the notation's use by program - standard notation is convenient for humans, which is simply not our concern.
 
 
+<a name="calc-legal-moves"></a>
 ### calculating legal moves
 
 having calculated the FEN, we can now ask for a list of legal moves from `chess.js`
@@ -1343,8 +1353,7 @@ describe('calculateLegalMoves', ()=>{
 we can worry about test coverage for calculating legal moves when we code it ourself!
 
 
-
-
+<a name="enforcing-legal-moves"></a>
 ### enforcing legal moves
 
 
@@ -1436,7 +1445,7 @@ now we can fix the movements for castling and en passant
 once our promotion widget works, we'll have a real chessboard!
 
 
-
+<a name="promotion-widget"></a>
 ### Promotion Widget
 
 When a pawn attempts to land on the end of the board, we need to show the user a widget and wait for their choice. They may choose to promote to Q, or underpromote to N / B / R.
@@ -1614,7 +1623,7 @@ back in the `Game`, we still need to write our `onPromote` callback function
 which completes the move, pushes it to the list of moves, and ends the turn.
 
 
-
+<a name="display-legal-moves"></a>
 ### Displaying legal moves on the Board
 
 now that we can calculate the legal moves whenever we want, we should show the user legal moves for a piece when it is selected or dragged.
@@ -1785,9 +1794,10 @@ remaining ideas for front end:
 
 
 
-
+<a name="multiplayer-online"></a>
 ## multiplayer online
 
+<a name="firebase-getting-started"></a>
 ### firebase getting started
 
 You'll need a Google account to follow along here, as we'll be building a firebase application to share the game state between two users.
@@ -1856,7 +1866,7 @@ https://firebase.google.com/docs/rules/get-started
 https://firebase.google.com/docs/rules/rules-language
 
 
-
+<a name="side-nav-games-menu"></a>
 ### side nav games menu
 
 
@@ -1972,6 +1982,7 @@ and of course we'll need to style our `SideNav` to actually appear as a togglabl
 now that we have users logging in with github, we can start our firebase (server side)
 
 
+<a name="making-data"></a>
 ### making data on the console
 
 first we need to make a `games` collection in firebase
@@ -2015,7 +2026,7 @@ now we can test loading the game once we logged in with
 we'll be using this as a starting point for the `loadGames` function later, so don't worry about it too much yet. What's important now is that we can load a game from the server.
 
 
-
+<a name="side-nav-tabs"></a>
 ### SideNav to view / join / create game
 
 
@@ -2259,7 +2270,7 @@ note that we've assumed the `SideNav` will send along the firebase document id a
 
 
 
-
+<a name="static-board"></a>
 ### StaticBoard display
 
 Here we'll reuse some of the work from `Board` to make a heads-up static display of the game
@@ -2387,6 +2398,7 @@ and style it to scroll with
 ```
 
 
+<a name="flipping"></a>
 ### flipping the board
 
 when the user is playing as black, we should change the `flex-direction` on the `Board`
@@ -2439,7 +2451,7 @@ function Board({
 
 
 
-
+<a name="joining"></a>
 ### joining games
 
 let's split our `SideNav` into two tabs
@@ -2647,6 +2659,7 @@ Also, as an exercise, let's indicate to the user somehow whose turn it will be w
 
 
 
+<a name="creating"></a>
 ### create game
 
 
@@ -2837,7 +2850,7 @@ precocious students may try joining their own game and getting a React duplicate
 
 
 
-
+<a name="securing"></a>
 ### securing moves, joins, and creates
 
 ... we can move for the wrong player
@@ -2851,6 +2864,7 @@ we need to check the right things from our security rules
 
 
 
+<a name="game-status"></a>
 ### game status
 
 when the game is over, we should give the user a chance to offer a rematch
@@ -2860,6 +2874,7 @@ we should also stop showing it in the games list
 ...
 
 
+<a name="players-display"></a>
 ### players display
 
 when users are playing, they'll be closing the `SideNav`... so we'll probably still want to show them who they're playing against
