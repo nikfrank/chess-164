@@ -2384,7 +2384,7 @@ when you have too many games and need to scroll, you can wrap the tabs JSX with
 <sub>./src/SideNav.js</sub>
 ```jsx
   <div className='active-tab'>
-    {currentTab === ... ? yada yada yada }
+    <div className='games-list'>...</div>
   </div>
 ```
 
@@ -2475,6 +2475,7 @@ let's split our `SideNav` into two tabs
 
   //...
 
+    <div className='active-tab'>
       {user && (
          <div className='tabs-headers'>
            <div onClick={()=> setCurrentTab('games-list')}
@@ -2498,7 +2499,8 @@ let's split our `SideNav` into two tabs
            load games with empty b / w
          </div>
       )}
-
+    </div>
+    
   //...
 
 ```
