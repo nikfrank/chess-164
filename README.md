@@ -3,42 +3,37 @@
 
 ## Agenda
 
-- create-react-app
-- build a board
-- svg pieces
-- click to move
-- drag and drop pieces
-  - remove from board / add to board
-
-- show legal moves
-  - import chess.js
-  - check / draw / stalemate / checkmate / illegal
-- highlight previous move
-- draw / remove arrows
-- send position as link (with title)
-  - load from link
-- export as (format)
-
-- game mode
-  - turns, moves
-  - clock
-  - block illegal moves
-
-- analysis mode
-  - branching moves
-
-- online mode
-- firebase
-- timestamped moves -> clock enforcement
-- login with ...
+ - 1p Build
+   - Board & Pieces
+   - making pieces draggable
+   - making squares droppable
+   - showing the piece while being dragged
+   - controlled component: Game -> Board
+   - Quick Refactor: App -> Game
+   - The Rules of Chess
+   - [FEN](https://en.wikipedia.org/wiki/Forsyth%E2%80%93Edwards_Notation) TDD
+   - calculating legal moves (chess.js)
+   - enforcing legal moves
+   - Promotion Widget
+   - Displaying legal moves on the Board
+ - multiplayer online
+   - firebase getting started
+   - side nav games menu
+   - making data on the console
+   - SideNav to view / join / create game
+   - StaticBoard display
+   - flipping the board
+   - joining games
+   - create game
+   - securing moves, joins, and creates
+   - game status
 
 
+## 1p Build
 
-## Build
+### Board & Pieces
 
-### The Board & Pieces
-
-- create-react-app
+create-react-app
 
 `$ npx create-react-app chess`
 
@@ -139,7 +134,7 @@ export default Board;
 ```
 
 
-- svg pieces
+svg pieces
 
 
 `$ yarn add react-chess-pieces`
@@ -180,7 +175,7 @@ function Board() {
 }
 ```
 
-- click to move
+click to move
 
 [useCallback](https://reactjs.org/docs/hooks-reference.html#usecallback)
 
@@ -287,8 +282,7 @@ and we need to move the piece when the second click occurs
 //...
 ```
 
-
-- drag and drop pieces
+### making pieces draggable
 
 `$ yarn add react-dnd react-dnd-html5-backend`
 
@@ -315,8 +309,6 @@ function App() {
 export default App;
 ```
 
-
-### making pieces draggable
 
 we need to make the original piece invisible, and override the module's preview by passing a blank image to a `<DragPreviewImage/>`
 
@@ -439,7 +431,7 @@ we'll also set the key to update whenever the piece updates, in order to trigger
 this key trick [seen here](https://stackoverflow.com/questions/30626030/can-you-force-a-react-component-to-rerender-without-calling-setstate) is necessary because internally `react-dnd` uses `React.memo` for some of the values we pass it (to its hooks).
 
 
-### showing the piece while being dragged (preview image)
+### showing the piece while being dragged
 
 lastly, we'll want the user to feel like they're moving a real piece around, blundering just the same.
 
@@ -483,7 +475,7 @@ the `App` will maintain state of the game (`pieces`) and respond to events by up
 later, when we build arrows or hi-lighting features, they will work the same way.
 
 
-### controlled component: Game / Analysis -> Board
+### controlled component: Game -> Board
 
 Before we build or import the logic for the game of chess (how the pieces move, is it stalemate?, etc) we want to build a decision hierarchy so we can change the rules later if we want.
 
@@ -664,7 +656,6 @@ function Board({ pieces, onSelect, selected, onClick }) {
 ```
 
 <sub>./src/App.js</sub>
-
 ``` jsx
 import React, { useState, useCallback } from 'react';
 
@@ -754,7 +745,7 @@ fantastic. We should take a break now to defeat whoever is nearby at chess on ou
 
 It'll be more convenient now to think of our application structure (before it's too late!)
 
-We'll have two main views: Game and Analysis (both with `Board`s), which should each be in their own files
+We'll have two main views: Game and Training (both with `Board`s), which should each be in their own files
 
 `App` should manage the view-routing and not much else
 
@@ -1236,7 +1227,7 @@ we've also invented a notation for chess moves which is a little different than 
 this was to improve the notation's use by program - standard notation is convenient for humans, which is simply not our concern.
 
 
-### legal moves
+### calculating legal moves
 
 having calculated the FEN, we can now ask for a list of legal moves from `chess.js`
 
@@ -1353,7 +1344,7 @@ we can worry about test coverage for calculating legal moves when we code it our
 
 
 
-#### legal moves on the board
+### enforcing legal moves
 
 
 we now have to keep track of moves in our notation to pass as a parameter
@@ -1370,7 +1361,6 @@ we now have to keep track of moves in our notation to pass as a parameter
       (String.fromCharCode(file+97)) + (rank+1)
     ) + (pieces[rank][file] ? 'x' : '') + (
       
-      // autopromote... should send JSX to portal and get callback first
       moveFrom.piece.match(/p/i) && (!rank || rank === 7) ? 'q' : ''
     );
 
@@ -1380,7 +1370,8 @@ we now have to keep track of moves in our notation to pass as a parameter
 
 
 
-we can now use them to calculate `legalMoves` correctly, 
+we can now use them to calculate `legalMoves` correctly, as well as remembering to treat en-passant as a capture
+
 
 <sub>./src/Game.js</sub>
 ``` jsx
@@ -1577,15 +1568,14 @@ we can draw the widget on top of the board, while indicating clearly it is somet
                         #fff5 20px
                       );
         
+        top: 0;
+        bottom: -300%;
+
         &.w {
-          top: 0;
-          bottom: -300%;
           flex-direction: column;
         }
 
         &.b {
-          top: 0;
-          bottom: -300%;
           transform: translateY(-75%);
           flex-direction: column-reverse;
         }
@@ -1849,6 +1839,21 @@ export const loginWithGithub = ()=>
 this code is all available in the [quickstart firestore guide](https://firebase.google.com/docs/firestore/quickstart)
 
 the `docs` that we're resolving are firebase documents, so we'll be able to use all the realtime methods built in.
+
+go ahead and read a bit of the docs to familiarize yourself before we start coding
+
+https://firebase.google.com/docs/firestore/data-model
+
+https://firebase.google.com/docs/firestore/query-data/queries
+
+https://firebase.google.com/docs/firestore/manage-data/add-data
+
+https://firebase.google.com/docs/firestore/query-data/listen
+
+https://firebase.google.com/docs/rules/get-started
+
+https://firebase.google.com/docs/rules/rules-language
+
 
 
 ### side nav games menu
@@ -2849,101 +2854,16 @@ we need to check the right things from our security rules
 
 when the game is over, we should give the user a chance to offer a rematch
 
+we should also stop showing it in the games list
+
 ...
 
 
 
 
-- join game (with second github account)
-- make moves (update), load moves (realtime)
-- update game status (function?)
-- show game preview with StaticBoard component
-
-- improve security rules (only can move my pieces on my turn)
-
-- rematch button
 - clock, clock security
 - deep link public access any game (client routing finally)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-https://firebase.google.com/docs/rules/get-started
-
-https://firebase.google.com/docs/rules/rules-language
-
-https://firebase.google.com/docs/firestore/quickstart
-
-
-
-- userid from avatar image
-
-put api key in env (make new api key)
-
-- join table, display opponent
-- start game, end game, switch sides
-- start game from position
-
-
-#### firestore security rules
-
-we need to put the white_id and black_id in the <<path>> in order to limit write to players
-
-we can write a rule function which will only allow players to play if it's their turn (and to make sure the turn value updates)
-
-
-(( this is wrong... ))
-```firestore
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    // Allow only authenticated participants access
-    match /games/{uid}/{document} {
-      allow read, write: if request.auth != null && request.auth.uid == uid
-    }
-    match /games/{uid1}/{uid2}/{document} {
-      allow read, write: if request.auth != null &&
-        (request.auth.uid == uid1 || request.auth.uid == uid2)
-    }
-  }
-}
-
-```
-
-
-https://firebase.google.com/docs/firestore/data-model
-
-https://firebase.google.com/docs/firestore/quickstart
-
-that way users will be able to make games with an open slot, and other users will be able to make a game fulfilling the posted challenge (and make the first move if relevant)
-
-
-
-
-
-
-
-
-
-
-
-https://firebase.google.com/docs/firestore/query-data/queries
-
-https://firebase.google.com/docs/firestore/manage-data/add-data
-
-https://firebase.google.com/docs/firestore/query-data/listen
 
 
 
