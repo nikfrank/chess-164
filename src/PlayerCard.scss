@@ -1,0 +1,17 @@
+.PlayerCard {
+  height: 10vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  img {
+    height: 50px;
+    max-height: 6vh;
+    margin: 2vh;
+  }
+
+  span {
+    display: inline-block;
+    min-width: 100px;
+  }
+}

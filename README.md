@@ -27,6 +27,7 @@
    - create game
    - securing moves, joins, and creates
    - game status
+   - players display
 
 
 ## 1p Build
@@ -2859,6 +2860,97 @@ we should also stop showing it in the games list
 ...
 
 
+### players display
+
+when users are playing, they'll be closing the `SideNav`... so we'll probably still want to show them who they're playing against
+
+`$ touch src/PlayerCard.js src/PlayerCard.scss`
+
+<sub>./src/Game.js</sub>
+```jsx
+import PlayerCard from './PlayerCard';
+
+  //...
+
+  const [players, setPlayers] = useState([]);
+
+  //...
+
+  useEffect(()=>{
+    if(remoteGame) {
+      return db.collection('games').doc(remoteGame).onSnapshot(doc => {
+        const g = doc.data();
+        
+        //.. other setStates
+
+        setPlayers([
+          { id: g.w, nickname: g.wname },
+          { id: g.b, nickname: g.bname },
+        ]);
+      } );
+    }
+  }, [remoteGame, user]);
+
+
+    <>
+      <PlayerCard player={ flipped ? players[0] : players[1]} />
+      <Board ...  />
+      <PlayerCard player={ flipped ? players[1] : players[0]} />
+    </>
+
+
+```
+
+<sub>./src/PlayerCard.js</sub>
+```jsx
+import React from 'react';
+import './PlayerCard.scss';
+
+function PlayerCard({ player: { id, nickname }={}}){
+  if(!id) return null;
+  return (
+    <div className='PlayerCard'>
+      <img alt='' src={'https://avatars3.githubusercontent.com/u/'+id} />
+      <span>{nickname}</span>
+    </div>
+  );
+}
+
+export default PlayerCard;
+```
+
+<sub>./src/PlayerCard.scss</sub>
+```scss
+.PlayerCard {
+  height: 10vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  img {
+    height: 50px;
+    max-height: 6vh;
+    margin: 2vh;
+  }
+
+  span {
+    display: inline-block;
+    min-width: 100px;
+  }
+}
+```
+
+
+<sub>./src/Board.scss</sub>
+```scss
+.Board {
+  //...
+
+  margin: 0 auto;
+
+  //...
+}
+```
 
 
 - clock, clock security

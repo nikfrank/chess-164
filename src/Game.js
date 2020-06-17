@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import Board from './Board';
+import PlayerCard from './PlayerCard';
 
 import { initPieces, calculateLegalMoves } from './chess-util';
 import Piece from 'react-chess-pieces';
@@ -30,7 +31,8 @@ const Game = ({ remoteGame, user })=>{
   const [promotion, setPromotion] = useState(null);
   const [legalMovesDisplay, setLegalMovesDisplay] = useState({});
   const [flipped, setFlipped] = useState(false);
-
+  const [players, setPlayers] = useState([]);
+  
   const setPieces = useCallback((p)=>{
     if(remoteGame)
       db.collection('games').doc(remoteGame).update({ pieces: p.flat() })
@@ -66,6 +68,11 @@ const Game = ({ remoteGame, user })=>{
         setTurnLocal(g.turn);
         setMovesLocal(g.moves);
         setFlipped(g.b === user?.providerData[0].uid);
+
+        setPlayers([
+          { id: g.w, nickname: g.wname },
+          { id: g.b, nickname: g.bname },
+        ]);
       } );
     }
   }, [remoteGame, user]);
@@ -90,7 +97,7 @@ const Game = ({ remoteGame, user })=>{
     if( move === 'ke8c8' ) move = 'o-o-o';
     if( move === 'Ke1g1' ) move = 'O-O';
     if( move === 'Ke1c1' ) move = 'O-O-O';
-      
+    
     if( !legalMoves.includes(move) ) return;
     setLegalMovesDisplay({});
 
@@ -130,7 +137,7 @@ const Game = ({ remoteGame, user })=>{
       turn === 'w' ? piece.toUpperCase() : piece.toLowerCase();
 
     setPieces(nextPieces);
-      
+    
     setPromotion(null);
     setTurn(turn === 'w' ? 'b' : 'w');
     setSelected({});
@@ -185,6 +192,8 @@ const Game = ({ remoteGame, user })=>{
   const onRightClick = ({ rank, file, piece })=> console.log('right click');
 
   return (
+    <>
+    <PlayerCard player={ flipped ? players[0] : players[1]} />
     <Board
         flipped={flipped}
         pieces={pieces}
@@ -197,11 +206,11 @@ const Game = ({ remoteGame, user })=>{
         onClick={onClick}
         onRightClick={onRightClick}
         promotion={promotion}
-        promotionWidget={
-          promotion && (
-            <PromotionWidget turn={turn} onPromote={onPromote}/>
-          )}
+        promotionWidget={promotion && <PromotionWidget turn={turn} onPromote={onPromote}/>}
     />
+    
+    <PlayerCard player={ flipped ? players[1] : players[0]} />
+    </>
   );
 };
 
