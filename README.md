@@ -1,5 +1,13 @@
 # chess with hooks
 
+in this course, we will build a multiplayer online chess game
+
+we wil use ReactJS (hooks) and firebase
+
+we will code one section in TDD, implement drag-and-drop, but we will largely focus on writing terse effective code in short clear functions.
+
+this course presumes a basic working knowledge of React with hooks - or at least a predisposition to google what you need to learn to get through the day.
+
 
 ## Agenda
 
@@ -44,7 +52,10 @@ create-react-app
 
 `$ yarn add node-sass`
 
-- build a board
+we'll be building a board with mostly flexbox
+
+and by using my `react-chess-pieces` library
+
 
 <sub>./src/App.js</sub>
 ``` jsx
