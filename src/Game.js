@@ -105,16 +105,18 @@ const Game = ({ remoteGame, user })=>{
       }
     }
     if( enPassant ) nextPieces[rank === 2 ? 3 : 4][file] = '';
-    
-    setPieces(nextPieces);
 
     setSelected({});
 
     if(!promoting){
+      setPieces(nextPieces);
       setTurn(turn === 'w' ? 'b' : 'w');
       setMoves([...moves, move]);
       
-    } else setPromotion({ rank, file, move });
+    } else {
+      setPromotion({ rank, file, move });
+      setPiecesLocal(nextPieces);
+    }
     
   }, [selected, moves, pieces, turn, setMoves, setPieces, setTurn]);
 
@@ -131,8 +133,9 @@ const Game = ({ remoteGame, user })=>{
     setPromotion(null);
     setTurn(turn === 'w' ? 'b' : 'w');
     setSelected({});
-    setMoves(moves => [...moves, promotion.move.slice(0, -1) + piece.toLowerCase()]);
-  }, [promotion, turn, pieces, setMoves, setPieces, setTurn]);
+    const nextMoves = [...moves, promotion.move.slice(0, -1) + piece.toLowerCase()];
+    setMoves(nextMoves);
+  }, [promotion, turn, pieces, moves, setMoves, setPieces, setTurn]);
 
   const showLegalMoves = useCallback(({ rank, file, piece })=>{
     const prefix = piece + String.fromCharCode(file+97) + (rank+1);

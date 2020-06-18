@@ -1626,8 +1626,9 @@ back in the `Game`, we still need to write our `onPromote` callback function
     setPromotion(null);
     setTurn(turn === 'w' ? 'b' : 'w');
     setSelected({});
-    setMoves(moves => [...moves, promotion.move.slice(0, -1) + piece.toLowerCase()]);
-  }, [promotion, turn, pieces]);
+    const nextMoves = [...moves, promotion.move.slice(0, -1) + piece.toLowerCase()];
+    setMoves(nextMoves);
+  }, [promotion, turn, pieces, moves, setMoves, setPieces, setTurn]);
 
 ```
 
@@ -2944,6 +2945,22 @@ import { db, syncMove } from './network';
     if(remoteGame) syncMove({ moves: m }, remoteGame, ()=> setMovesLocal(m));
     else setMovesLocal(m);
   }, [setMovesLocal, remoteGame]);
+
+  //... and in onMove
+
+    if( enPassant ) nextPieces[rank === 2 ? 3 : 4][file] = '';
+
+    setSelected({});
+
+    if(!promoting){
+      setPieces(nextPieces);
+      setTurn(turn === 'w' ? 'b' : 'w');
+      setMoves([...moves, move]);
+      
+    } else {
+      setPromotion({ rank, file, move });
+      setPiecesLocal(nextPieces);
+    }
 
 ```
 
