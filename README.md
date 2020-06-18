@@ -2265,7 +2265,6 @@ const Game = ({ remoteGame })=>{
         );
         setTurnLocal(g.turn);
         setMovesLocal(g.moves);
-        setFlipped(g.b === user?.providerData[0].uid);
       } );
     }
   }, [remoteGame]);
@@ -2436,11 +2435,53 @@ const Game = ({ remoteGame, user })=>{
 
 
   //...
+        promotionWidget={promotion && <PromotionWidget turn={turn} onPromote={onPromote} flipped={flipped}/>}
+
+  //...
   
      <Board flipped={flipped} ... />
 
   //...
 ```
+
+then in `PromotionWidget` earlier in the file
+
+```jsx
+//...
+
+const PromotionWidget = ({ turn, onPromote, flipped })=>{
+  //...
+
+    <div className={'promotion-widget '+turn+' '+ (flipped? 'flipped':'')}>
+```
+
+and to fix the style
+
+<sub>./src/Board.scss</sub>
+```scss
+  //...
+
+      .promotion-widget {
+        //...
+
+        top: 0;
+        bottom: -300%;
+
+        &.flipped {
+          bottom: 0;
+          top: -300%;
+        }
+
+        //...
+
+        &.b.flipped {
+          transform: translateY(75%);
+          flex-direction: column;
+        }
+
+```
+
+finally we can actually flip the board
 
 <sub>./src/Board.js</sub>
 ```jsx

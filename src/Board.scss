@@ -35,6 +35,11 @@
         top: 0;
         bottom: -300%;
 
+        &.flipped {
+          bottom: 0;
+          top: -300%;
+        }
+        
         &.w {
           flex-direction: column;
         }
@@ -43,7 +48,12 @@
           transform: translateY(-75%);
           flex-direction: column-reverse;
         }
-        
+
+        &.b.flipped {
+          transform: translateY(75%);
+          flex-direction: column;
+        }
+
         svg {
           transform: scale(0.625, 0.625) translate(25%, 25%);
         }

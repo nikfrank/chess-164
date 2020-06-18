@@ -7,14 +7,14 @@ import Piece from 'react-chess-pieces';
 
 import { db, syncMove } from './network';
 
-const PromotionWidget = ({ turn, onPromote })=>{
+const PromotionWidget = ({ turn, onPromote, flipped })=>{
   const promote = piece => e=> {
     e.stopPropagation();
     onPromote(piece);
   };
   
   return (
-    <div className={'promotion-widget '+turn}>
+    <div className={'promotion-widget '+turn+' '+ (flipped? 'flipped':'')}>
       <div onClick={promote('q')}><Piece piece={turn === 'w' ? 'Q' : 'q'} /></div>
       <div onClick={promote('r')}><Piece piece={turn === 'w' ? 'R' : 'r'} /></div>
       <div onClick={promote('n')}><Piece piece={turn === 'w' ? 'N' : 'n'} /></div>
@@ -199,7 +199,7 @@ const Game = ({ remoteGame, user })=>{
         onClick={onClick}
         onRightClick={onRightClick}
         promotion={promotion}
-        promotionWidget={promotion && <PromotionWidget turn={turn} onPromote={onPromote}/>}
+        promotionWidget={promotion && <PromotionWidget turn={turn} onPromote={onPromote} flipped={flipped}/>}
     />
     
     <PlayerCard player={ flipped ? players[1] : players[0]} />
