@@ -2870,8 +2870,91 @@ precocious students may try joining their own game and getting a React duplicate
 
 we need to check the right things from our security rules
 
-...
+<sub>console.firebase.google.com/project/<PROJECT_SLUG>/database/firestore/rules</sub>
+```js
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isMyTurn(){
+      return 'turn' in resource.data &&
+             'turn' in request.resource.data &&
+             resource.data.turn in resource.data &&
+             (request.auth.token.firebase.identities["github.com"][0] == resource.data[resource.data.turn]) &&
+             request.resource.data.turn != resource.data.turn;
+    }
+    function joiningGame(){
+      let color = request.resource.data.w == request.auth.token.firebase.identities["github.com"][0] ? 'w' : 'b';
+      return (request.auth.token.firebase.identities["github.com"][0] == request.resource.data[color]) &&
+             (resource.data[color] == '' || !(color in resource.data));
+    }
+    match /{document=**} {
+      allow read, create: if request.auth != null;
+      allow write: if joiningGame() || isMyTurn();
+    }
+  }
+}
+```
 
+this solution was a lot of work (debugging rules in the cloud is always hard, and there aren't so many examples online... I had bugs that stackoverflow had no answer for!) - so in a way it is provided here to be studied as an example and referred back to as needed
+
+
+we also need to refactor our move updates to be all at once (prviously we had synced `moves`, `pieces`, and `turn` separately), so the security rule can properly evaluate if your move is legal
+
+<sub>./src/chess-util.js</sub>
+```js
+//...
+
+const tempMove = {};
+const tempCbs = {};
+export const syncMove = ({ pieces, turn, moves }, game, cb)=>{
+  tempMove[game] = tempMove[game] || {};
+  if( pieces ) tempMove[game].pieces = pieces;
+  if( moves ) tempMove[game].moves = moves;
+  if( turn ) tempMove[game].turn = turn;
+
+  tempCbs[game] = tempCbs[game] || [];
+  tempCbs[game].push(cb);
+
+  if( tempMove[game].pieces && tempMove[game].moves && tempMove[game].turn )
+    db.collection('games').doc(game)
+      .update(tempMove[game])
+      .then(()=> tempCbs[game].forEach(c=> c()))
+      .then(()=> (tempMove[game] = {}))
+      .then(()=> (tempCbs[game] = []));
+};
+```
+
+<sub>./src/Game.js</sub>
+```jsx
+import { db, syncMove } from './network';
+
+//...
+
+  const setPieces = useCallback((p)=>{
+    if(remoteGame) syncMove({ pieces: p.flat() }, remoteGame, ()=> setPiecesLocal(p));
+    else setPiecesLocal(p);   
+  }, [setPiecesLocal, remoteGame]);
+
+  const setTurn = useCallback((t)=>{
+    if(remoteGame) syncMove({ turn: t }, remoteGame, ()=> setTurnLocal(t));
+    else setTurnLocal(t);
+  }, [setTurnLocal, remoteGame]);
+
+  const setMoves = useCallback((m)=>{
+    if(remoteGame) syncMove({ moves: m }, remoteGame, ()=> setMovesLocal(m));
+    else setMovesLocal(m);
+  }, [setMovesLocal, remoteGame]);
+
+```
+
+
+read more about testing rules
+
+https://firebase.google.com/docs/rules/emulator-setup
+
+https://firebase.google.com/docs/emulator-suite/install_and_configure
+
+https://github.com/firebase/quickstart-nodejs/tree/master/firestore-emulator/javascript-quickstart
 
 ...
 

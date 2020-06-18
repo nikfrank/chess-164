@@ -5,7 +5,7 @@ import PlayerCard from './PlayerCard';
 import { initPieces, calculateLegalMoves } from './chess-util';
 import Piece from 'react-chess-pieces';
 
-import { db } from './network';
+import { db, syncMove } from './network';
 
 const PromotionWidget = ({ turn, onPromote })=>{
   const promote = piece => e=> {
@@ -34,27 +34,17 @@ const Game = ({ remoteGame, user })=>{
   const [players, setPlayers] = useState([]);
   
   const setPieces = useCallback((p)=>{
-    if(remoteGame)
-      db.collection('games').doc(remoteGame).update({ pieces: p.flat() })
-        .then(()=> setPiecesLocal(p) );
-    
-    else setPiecesLocal(p);
-    
+    if(remoteGame) syncMove({ pieces: p.flat() }, remoteGame, ()=> setPiecesLocal(p));
+    else setPiecesLocal(p);    
   }, [setPiecesLocal, remoteGame]);
 
   const setTurn = useCallback((t)=>{
-    if(remoteGame)
-      db.collection('games').doc(remoteGame).update({ turn: t })
-        .then(()=> setTurnLocal(t) );
-
+    if(remoteGame) syncMove({ turn: t }, remoteGame, ()=> setTurnLocal(t));
     else setTurnLocal(t);
   }, [setTurnLocal, remoteGame]);
 
   const setMoves = useCallback((m)=>{
-    if(remoteGame)
-      db.collection('games').doc(remoteGame).update({ moves: m })
-        .then(()=> setMovesLocal(m) );
-
+    if(remoteGame) syncMove({ moves: m }, remoteGame, ()=> setMovesLocal(m));
     else setMovesLocal(m);
   }, [setMovesLocal, remoteGame]);
   

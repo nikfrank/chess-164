@@ -50,3 +50,22 @@ export const joinGame = ({ gameId, userId, asPlayer, nickname })=>
     .update({ [asPlayer]: userId, [asPlayer+'name']: nickname });
 
 export const createGame = (game)=> db.collection('games').add(game);
+
+const tempMove = {};
+const tempCbs = {};
+export const syncMove = ({ pieces, turn, moves }, game, cb)=>{
+  tempMove[game] = tempMove[game] || {};
+  if( pieces ) tempMove[game].pieces = pieces;
+  if( moves ) tempMove[game].moves = moves;
+  if( turn ) tempMove[game].turn = turn;
+
+  tempCbs[game] = tempCbs[game] || [];
+  tempCbs[game].push(cb);
+
+  if( tempMove[game].pieces && tempMove[game].moves && tempMove[game].turn )
+    db.collection('games').doc(game)
+      .update(tempMove[game])
+      .then(()=> tempCbs[game].forEach(c=> c()))
+      .then(()=> (tempMove[game] = {}))
+      .then(()=> (tempCbs[game] = []));
+};
