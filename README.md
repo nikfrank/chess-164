@@ -3025,6 +3025,36 @@ when the game is over, we should give the user a chance to offer a rematch
 
 we should also stop showing it in the games list
 
+first we'll calculate if the game is over
+
+<sub>./src/chess-util.js</sub>
+```js
+//...
+
+export const isGameOver = (pieces, turn, moves)=> {
+  const FEN = calculateFEN(pieces, turn, moves);
+  
+  return (new Chess(FEN)).game_over();
+};
+```
+
+now we'll use this to update the server state when the user makes a move
+
+<sub>./src/Game.js</sub>
+```jsx
+
+```
+
+and we'll make sure we don't bother loading completed games to our list
+
+<sub>./src/network.js</sub>
+```js
+
+```
+
+perhaps we'll move them to an `Archive` view / database later.
+
+
 ...
 
 
@@ -3122,9 +3152,131 @@ export default PlayerCard;
 ```
 
 
-- clock, clock security
-- deep link public access any game (client routing finally)
 
+
+
+- clock, clock security
+- routing, + Openings view
+- deep link public access any game (allow read on game always)
+
+
+## Openings Trainer
+
+Our users want to improve their chess game - and most of them don't know a Sicilian from a Bong Cloud.
+
+Let's build a view which let's them practice and explore openings.
+
+
+`$ touch src/Openings.js src/Openings.scss`
+
+<sub>./src/App.js</sub>
+```jsx
+// routing
+```
+
+<sub>./src/Openings.js</sub>
+```jsx
+//...
+```
+
+<sub>./src/Openings.scss</sub>
+```scss
+//...
+```
+
+first let's render a `Board`
+
+<sub>./src/Openings.js</sub>
+```jsx
+//...
+```
+
+and make the pieces movable
+
+```jsx
+//...
+```
+
+now we'll want to refactor some of our movement logic from `Game` into the util so we can reuse it here
+
+<sub>./src/Game.js</sub>
+```diff
+
+```
+
+<sub>./src/chess-util.js</sub>
+```js
+
+```
+
+<sub>./src/Openings.js</sub>
+```jsx
+
+```
+
+we won't bother to show the legal moves here, but we will want to show the user a list of moves (in `san`)
+
+let's make a component to display the analysis notation
+
+`$ touch src/AnalysisNotation.js src/AnalysisNotation.scss`
+
+<sub>./src/AnalysisNotation.js</sub>
+```jsx
+
+```
+
+<sub>./src/AnalysisNotation.scss</sub>
+```scss
+
+```
+
+<sub>./src/Openings.js</sub>
+```jsx
+
+```
+
+and an undo / redo button
+
+<sub>./src/Openings.js</sub>
+```jsx
+
+```
+
+Now we'll want to show the user which opening they are playing
+
+we'll need a list of openings (ECO)
+
+<sub>./src/chess-util.js</sub>
+```js
+
+```
+
+so we can find the opening they are playing and display that back to them
+
+
+<sub>./src/Openings.js</sub>
+```jsx
+
+```
+
+### practice and explore
+
+our openings trainer feature will have two modes
+
+- explore
+
+the user can make any move they want, we'll display a filtered list of openings they could be playing
+
+we'll build an `ArrowsLayer` component on top of our `Board` which can show users which book moves remain available
+
+
+- practice
+
+the user will practice playing only theoretical moves in two ways
+
+we can select an opening to test the user's knowledge of (either player or both player's moves)
+
+we'll challenge the user to remain in the book (for some number of moves) against a computer player
 
 
 
