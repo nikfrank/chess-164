@@ -578,7 +578,7 @@ let's also calculate a list of "next book moves" to display with a different svg
       )
     ));
     
-    setBookMoves(nextBookMoves);
+    setBookMoves(nextBookMoves.map(castleAsKingMove));
   }, [moves]);
 
   //...
@@ -601,7 +601,7 @@ let's also calculate a list of "next book moves" to display with a different svg
 
 ```
 
-and some new markerSvgs for the `Board`
+and some new markerSvgs for the `Board` (or new colors at least)
 
 <sub>./src/Board.js</sub>
 ```jsx

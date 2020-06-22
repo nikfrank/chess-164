@@ -32,7 +32,7 @@ function Openings(){
       )
     ));
 
-    setBookMoves(nextBookMoves);
+    setBookMoves(nextBookMoves.map(castleAsKingMove));
   }, [moves]);
   
   const onMove = useCallback(({ rank, file }, moveFrom=selected)=>{
