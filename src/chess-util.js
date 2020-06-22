@@ -254,13 +254,12 @@ const convertSAN = (moves)=> {
 export const filterOpeningsByMoves = (moves)=>{
   if( !moves.length ) return [eco[0]];
 
-  let rem = [...eco], prev;
+  let rem = [...eco];
   let i = 0;
   
   while((i < moves.length) && (rem.length)){
-    prev = [...rem];
-    rem = prev.filter(opening=> opening.moves[i] === moves[i]);
+    rem = rem.filter(opening=> opening.moves[i] === moves[i]);
     i++;
   }
-  return rem.length ? rem : prev;
+  return rem;
 };

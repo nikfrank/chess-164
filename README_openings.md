@@ -518,15 +518,15 @@ import {
 
   //...
   
-  const [currentOpening, setCurrentOpening] = useState(null);
+  const [currentOpenings, setCurrentOpenings] = useState([]);
 
   useEffect(()=> {
-    setCurrentOpening( filterOpeningsByMoves(moves)[0] );
+    setCurrentOpenings( filterOpeningsByMoves(moves) );
   }, [moves]);
 
   //...
   
-        {currentOpening?.name}
+        {currentOpenings[0]?.name}
 
 ```
 
@@ -537,15 +537,14 @@ import {
 export const filterOpeningsByMoves = (moves)=>{
   if( !moves.length ) return [eco[0]];
 
-  let rem = [...eco], prev;
+  let rem = [...eco];
   let i = 0;
   
   while((i < moves.length) && (rem.length)){
-    prev = [...rem];
-    rem = prev.filter(opening=> opening.moves[i] === moves[i]);
+    rem = rem.filter(opening=> opening.moves[i] === moves[i]);
     i++;
   }
-  return rem.length ? rem : prev;
+  return rem;
 };
 
 ```
@@ -558,7 +557,78 @@ now we'll add more features to explore mode (undo / redo / displaying book moves
 
 ### Displaying book moves (explore mode)
 
+when the user makes a move, we're calculating a list of openings they could be playing
 
+let's also calculate a list of "next book moves" to display with a different svg
+
+
+<sub>./src/Openings.js</sub>
+```jsx
+  //...
+  
+  const [bookMoves, setBookMoves] = useState([]);
+  
+  useEffect(()=> {
+    const openings = filterOpeningsByMoves(moves);
+    setCurrentOpenings( openings );
+
+    const nextBookMoves = Array.from( new Set(
+      openings.map(opening =>
+        opening.moves.slice(moves.length)[0]
+      )
+    ));
+    
+    setBookMoves(nextBookMoves);
+  }, [moves]);
+
+  //...
+
+  const showLegalMoves = useCallback(({ rank, file, piece })=>{
+    const prefix = piece + String.fromCharCode(file+97) + (rank+1);
+
+    setLegalMovesDisplay(
+      calculateLegalMoves(pieces, turn, moves)
+        .map(castleAsKingMove)
+        .filter(move => move.indexOf(prefix) === 0)
+        .reduce((moves, move)=> ({
+          ...moves,
+          [move.slice(3,5)]: bookMoves.includes(move) ?
+          move.includes('x') ? 'bx' : 'b.':
+          move.includes('x') ? 'x' : '.',
+        }), {})
+    );
+  }, [pieces, turn, moves, bookMoves]);
+
+```
+
+and some new markerSvgs for the `Board`
+
+<sub>./src/Board.js</sub>
+```jsx
+//...
+
+
+const MarkerSVGS = {
+  //...
+
+  'b.': (
+    <svg viewBox='0 0 10 10' className='marker'>
+      <circle cx={5} cy={5} r={2} fill='#fe28' stroke='black' strokeWidth={0.25}/>
+    </svg>
+  ),
+  'bx': (
+    <svg viewBox='0 0 16 16' className='marker'>
+      <polygon points='4,6 6,4 8,6 10,4 12,6 10,8 12,10 10,12 8,10 6,12 4,10 6,8 4,6' fill='#fe28' stroke='black' strokeWidth={0.25}/>
+    </svg>
+  ),
+};
+
+//...
+```
+
+now the user can discover theoretical moves in openings they don't know yet.
+
+If we only had an undo button, the user would really be able to learn
 
 
 

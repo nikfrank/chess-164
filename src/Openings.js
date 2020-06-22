@@ -19,10 +19,20 @@ function Openings(){
   const [selected, setSelected] = useState({});
   const [legalMovesDisplay, setLegalMovesDisplay] = useState({});
 
-  const [currentOpening, setCurrentOpening] = useState(null);
-
+  const [currentOpenings, setCurrentOpenings] = useState([]);
+  const [bookMoves, setBookMoves] = useState([]);
+  
   useEffect(()=> {
-    setCurrentOpening( filterOpeningsByMoves(moves)[0] );
+    const openings = filterOpeningsByMoves(moves);
+    setCurrentOpenings( openings );
+
+    const nextBookMoves = Array.from( new Set(
+      openings.map(opening =>
+        opening.moves.slice(moves.length)[0]
+      )
+    ));
+
+    setBookMoves(nextBookMoves);
   }, [moves]);
   
   const onMove = useCallback(({ rank, file }, moveFrom=selected)=>{
@@ -53,12 +63,14 @@ function Openings(){
       calculateLegalMoves(pieces, turn, moves)
         .map(castleAsKingMove)
         .filter(move => move.indexOf(prefix) === 0)
-        .map(move => move.slice(3) )
         .reduce((moves, move)=> ({
-          ...moves, [move.slice(0,2)]: move.includes('x') ? 'x' : '.',
+          ...moves,
+          [move.slice(3,5)]: bookMoves.includes(move) ?
+          move.includes('x') ? 'bx' : 'b.':
+          move.includes('x') ? 'x' : '.',
         }), {})
     );
-  }, [pieces, turn, moves]);
+  }, [pieces, turn, moves, bookMoves]);
 
   
   const onSelect = useCallback(({ rank, file, piece })=>{
@@ -99,7 +111,7 @@ function Openings(){
           onDragEnd={onDragEnd}
           onClick={onClick}
       />
-      {currentOpening?.name}
+      {currentOpenings[0]?.name}
     </div>
   );
 }

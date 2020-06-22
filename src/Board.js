@@ -65,8 +65,18 @@ const MarkerSVGS = {
   ),
   'x': (
     <svg viewBox='0 0 16 16' className='marker'>
-      <polygon points='4,6 6,4 8,6 10,4 12,6 10,8 12,10 10,12 8,10 6,12 4,10 6,8 4,6'
-               fill='#5008' stroke='white' strokeWidth={0.25}/>
+      <polygon points='4,6 6,4 8,6 10,4 12,6 10,8 12,10 10,12 8,10 6,12 4,10 6,8 4,6' fill='#5008' stroke='white' strokeWidth={0.25}/>
+    </svg>
+  ),
+
+  'b.': (
+    <svg viewBox='0 0 10 10' className='marker'>
+      <circle cx={5} cy={5} r={2} fill='#fe28' stroke='black' strokeWidth={0.25}/>
+    </svg>
+  ),
+  'bx': (
+    <svg viewBox='0 0 16 16' className='marker'>
+      <polygon points='4,6 6,4 8,6 10,4 12,6 10,8 12,10 10,12 8,10 6,12 4,10 6,8 4,6' fill='#fe28' stroke='black' strokeWidth={0.25}/>
     </svg>
   ),
 };
