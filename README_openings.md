@@ -428,7 +428,10 @@ import eco from './eco';
 
 //...
 
-const
+const convertSAN = (moves)=> {
+  const game = new Chess();
+  //...
+};
 ```
 
 
