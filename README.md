@@ -3025,23 +3025,34 @@ when the game is over, we should give the user a chance to offer a rematch
 
 we should also stop showing it in the games list
 
-first we'll calculate if the game is over
+first we'll make a function to calculate if the game is over
 
 <sub>./src/chess-util.js</sub>
 ```js
 //...
 
-export const isGameOver = (pieces, turn, moves)=> {
-  const FEN = calculateFEN(pieces, turn, moves);
-  
-  return (new Chess(FEN)).game_over();
+export const isGameOver = ({ pieces, turn, moves })=> {
+  //... fill this in later
 };
 ```
 
 now we'll use this to update the server state when the user makes a move
 
-<sub>./src/Game.js</sub>
-```jsx
+<sub>./src/network.js</sub>
+```js
+import { isGameOver } from './chess-util';
+
+  //...
+  
+  if( tempMove[game].pieces && tempMove[game].moves && tempMove[game].turn )
+    db.collection('games').doc(game)
+      .update({
+        ...tempMove[game],
+        isGameOver: isGameOver(tempMove[game]),
+      })
+      .then(()=> tempCbs[game].forEach(c=> c()))
+      .then(()=> (tempMove[game] = {}))
+      .then(()=> (tempCbs[game] = []));
 
 ```
 
@@ -3049,10 +3060,128 @@ and we'll make sure we don't bother loading completed games to our list
 
 <sub>./src/network.js</sub>
 ```js
+//...
+
+export const loadGames = (userId)=>
+  Promise.all([
+    db.collection('games')
+      .where('isGameOver', '==', false)
+      .where('w', '==', userId).get()
+      .then(snap => snap.docs),
+
+    db.collection('games')
+      .where('isGameOver', '==', false)
+      .where('b', '==', userId).get()
+      .then(snap => snap.docs)
+  ]).then(g => g.flat().map(game => ({ ...game.data(), id: game.id })) );
+
+//...
+```
+
+and we'll make sure new games have the `isGameOver` field
+
+<sub>./src/SideNav.js</sub>
+```jsx
+  const makeNewGame = useCallback((game)=>{
+    createGame({
+      ...game,
+      [game.b? 'bname':'wname']: nickname,
+      isGameOver: false,
+    }).then(()=> setCurrentTab('join-list'));
+  }, [nickname]);
 
 ```
 
-perhaps we'll move them to an `Archive` view / database later.
+
+and now that we know the pieces will be in server (array) format
+
+<sub>./src/chess-util.js</sub>
+```js
+//...
+
+export const isGameOver = ({ pieces, turn, moves })=> {
+  const matrixPieces = Array(8).fill(0).map((_,i)=> pieces.slice(i*8, i*8+8));
+  
+  const FEN = calculateFEN(matrixPieces, turn, moves);
+  
+  return (new Chess(FEN)).game_over();
+};
+```
+
+any games you already have in the database will need `isGameOver: false` filled in for them to show up at all!
+
+
+let's add an archive view to see completed games
+
+<sub>./src/SideView.js</sub>
+```jsx
+  //...
+
+  useEffect(()=>{
+    if( user && (currentTab === 'games-list') )
+      loadGames(user.providerData[0].uid)
+      .then((games)=> setMyGames(games.filter(game => game.w && game.b)))
+      .catch(e => console.error(e) );
+    
+    if( user && (currentTab === 'archive-list') )
+      loadGames(user.providerData[0].uid, !!'load archived')
+      .then((games)=> setMyGames(games.filter(game => game.w && game.b)))
+      .catch(e => console.error(e) )
+
+  }, [user, currentTab]);
+
+
+  //...
+
+
+         <div onClick={()=> setCurrentTab('archive-list')}
+              className={currentTab === 'new-game' ? 'selected' : ''}>
+           Archive
+         </div>
+
+
+  //...
+
+        : currentTab === 'archive-list' ? 
+          <div className='games-list'>
+            {myGames
+              .map((game, i)=> (
+                <div key={game.id} onClick={()=> onSelectGame(game.id)} className='static-game'>
+                  {game.wname} vs {game.bname}
+                  <br/>
+                  {game.turn} to move
+                  <StaticBoard pieces={game.pieces}
+                               flipped={user.providerData[0].uid === game.b}/>
+                </div>
+              ))}
+          </div>}
+
+```
+
+and we'll need to refactor our `loadGames` to load archived games when we want
+
+and backwards compaitbly when we don't
+
+
+<sub>./src/network.js</sub>
+```js
+//...
+
+export const loadGames = (userId, loadArchived=false)=>
+  Promise.all([
+    db.collection('games')
+      .where('isGameOver', '==', loadArchived)
+      .where('w', '==', userId).get()
+      .then(snap => snap.docs),
+
+    db.collection('games')
+      .where('isGameOver', '==', loadArchived)
+      .where('b', '==', userId).get()
+      .then(snap => snap.docs)
+  ]).then(g => g.flat().map(game => ({ ...game.data(), id: game.id })) );
+
+//...
+```
 
 
 ...

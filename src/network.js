@@ -1,3 +1,5 @@
+import { isGameOver } from './chess-util';
+
 import firebase from 'firebase/app';
 import 'firebase/auth';
 import 'firebase/firestore';
@@ -24,13 +26,15 @@ export const db = firebase.firestore();
 export const loginWithGithub = ()=>
   auth().signInWithPopup( new auth.GithubAuthProvider() );
 
-export const loadGames = (userId)=>
+export const loadGames = (userId, loadArchived=false)=>
   Promise.all([
     db.collection('games')
+      .where('isGameOver', '==', loadArchived)
       .where('w', '==', userId).get()
       .then(snap => snap.docs),
 
     db.collection('games')
+      .where('isGameOver', '==', loadArchived)
       .where('b', '==', userId).get()
       .then(snap => snap.docs)
   ]).then(g => g.flat().map(game => ({ ...game.data(), id: game.id })) );
@@ -64,7 +68,10 @@ export const syncMove = ({ pieces, turn, moves }, game, cb)=>{
 
   if( tempMove[game].pieces && tempMove[game].moves && tempMove[game].turn )
     db.collection('games').doc(game)
-      .update(tempMove[game])
+      .update({
+        ...tempMove[game],
+        isGameOver: isGameOver(tempMove[game]),
+      })
       .then(()=> tempCbs[game].forEach(c=> c()))
       .then(()=> (tempMove[game] = {}))
       .then(()=> (tempCbs[game] = []));

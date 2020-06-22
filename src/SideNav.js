@@ -19,7 +19,13 @@ function SideNav({ user, onSelectGame }) {
     if( user && (currentTab === 'games-list') )
       loadGames(user.providerData[0].uid)
       .then((games)=> setMyGames(games.filter(game => game.w && game.b)))
+      .catch(e => console.error(e) );
+    
+    if( user && (currentTab === 'archive-list') )
+      loadGames(user.providerData[0].uid, !!'load archived')
+      .then((games)=> setMyGames(games.filter(game => game.w && game.b)))
       .catch(e => console.error(e) )
+
   }, [user, currentTab]);
 
   useEffect(()=> {
@@ -47,6 +53,7 @@ function SideNav({ user, onSelectGame }) {
     createGame({
       ...game,
       [game.b? 'bname':'wname']: nickname,
+      isGameOver: false,
     }).then(()=> setCurrentTab('join-list'));
   }, [nickname]);
 
@@ -81,6 +88,10 @@ function SideNav({ user, onSelectGame }) {
               className={currentTab === 'new-game' ? 'selected' : ''}>
            New Game
          </div>
+         <div onClick={()=> setCurrentTab('archive-list')}
+              className={currentTab === 'new-game' ? 'selected' : ''}>
+           Archive
+         </div>
        </div>
       }
 
@@ -112,10 +123,23 @@ function SideNav({ user, onSelectGame }) {
              ))}
           </div>
           
-          : currentTab === 'new-game' &&
+          : currentTab === 'new-game' ?
           <NewGameForm value={newGame} userId={user.providerData[0].uid}
                        onChange={setNewGame} onSubmit={makeNewGame} />
-         }
+          
+          : currentTab === 'archive-list' &&
+          <div className='games-list'>
+            {myGames
+              .map((game, i)=> (
+                <div key={game.id} onClick={()=> onSelectGame(game.id)} className='static-game'>
+                  {game.wname} vs {game.bname}
+                  <br/>
+                  {game.turn} to move
+                  <StaticBoard pieces={game.pieces}
+                               flipped={user.providerData[0].uid === game.b}/>
+                </div>
+              ))}
+          </div>}
        </div>        
     </div>
   );

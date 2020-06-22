@@ -155,3 +155,10 @@ export const calculateLegalMoves = (pieces, turn, moves, moveFrom)=> {
   ));
 };
 
+export const isGameOver = ({ pieces, turn, moves })=> {
+  const matrixPieces = Array(8).fill(0).map((_,i)=> pieces.slice(i*8, i*8+8));
+  
+  const FEN = calculateFEN(matrixPieces, turn, moves);
+  
+  return (new Chess(FEN)).game_over();
+};
