@@ -433,7 +433,7 @@ const convertSAN = (moves)=> {
   
   moves.forEach(move => game.move(move));
   
-  const verboaseMoves = game.history({ verbose: true });
+  const verboseMoves = game.history({ verbose: true });
   
   return verboseMoves.map(cjsMove=> (
     cjsMove.flags === 'q' ? cjsMove.color === 'w' ? 'O-O-O' : 'o-o-o' :
@@ -452,7 +452,59 @@ which we can now use to dump out a new file with moves in our notation
 
 ```js
 
+const allOpenings = eco.map(opening => ({
+  ...opening,
+  sanMoves: opening.moves,
+  moves: convertSAN(opening.moves),
+}));
+
+
+function download(content, fileName, contentType) {
+    var a = document.createElement("a");
+    var file = new Blob([content], {type: contentType});
+    a.href = URL.createObjectURL(file);
+    a.download = fileName;
+    a.click();
+}
+
+download('export default '+JSON.stringify(allOpenings)+';', 'eco.js', 'text/plain');
 ```
+
+which we can move onto the old copy, replacing it
+
+`$ mv ~/Downloads/eco.js src/eco.js`
+
+
+after which, we should delete the code which runs this automatically on boot
+
+```diff
+//...
+
+-const allOpenings = eco.map(opening => ({
+-  ...opening,
+-  sanMoves: opening.moves,
+-  moves: convertSAN(opening.moves),
+-}));
+-
+-function download(content, fileName, contentType) {
+-    var a = document.createElement("a");
+-    var file = new Blob([content], {type: contentType});
+-    a.href = URL.createObjectURL(file);
+-    a.download = fileName;
+-    a.click();
+-}
+-
+-download('export default '+JSON.stringify(allOpenings)+';', 'eco.js', 'text/plain');
+```
+
+great, now we can use these openings easily to compare with the moves we have in our `Openings` component
+
+
+### Displaying book moves (explore mode)
+
+
+
+
 
 
 

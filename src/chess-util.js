@@ -1,3 +1,5 @@
+import eco from './eco';
+
 import C from 'chess.js';
 const Chess = C.Chess || C;
 
@@ -227,4 +229,24 @@ export const calculateBoardAfterMove = ({ pieces, moves, turn }, moveFrom, moveT
     turn: nextTurn,
     moves: nextMoves,
   };
+};
+
+
+const convertSAN = (moves)=> {
+  const game = new Chess();
+  
+  moves.forEach(move => game.move(move));
+  
+  const verboseMoves = game.history({ verbose: true });
+  
+  return verboseMoves.map(cjsMove=> (
+    cjsMove.flags === 'q' ? cjsMove.color === 'w' ? 'O-O-O' : 'o-o-o' :
+    cjsMove.flags === 'k' ? cjsMove.color === 'w' ? 'O-O' : 'o-o' :
+    
+    (cjsMove.color === 'w' ? cjsMove.piece.toUpperCase() : cjsMove.piece) +
+    cjsMove.from + cjsMove.to +
+     (cjsMove.flags.includes('c') ? 'x' : '') +
+     (cjsMove.flags.includes('e') ? 'x' : '') +
+     (cjsMove.promotion || '')
+  ));
 };
