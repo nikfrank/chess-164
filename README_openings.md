@@ -383,6 +383,55 @@ now we just need to add a list of openings, which we'll be able to use to displa
 
 ### ECO
 
+we'll need a resource of JSON formatted ECO standard chess openings
+
+[here's one I found which should be pretty easy to automate into JSON](https://www.chessgames.com/chessecohelp.html)
+
+<sub>browser console</sub?
+```js
+const names = [...document.querySelectorAll('tr td b')].map(el => el.innerText);
+
+const moves = [...document.querySelectorAll('tr td font font')].map(el => el.innerText);
+
+const codes = [...document.querySelectorAll('tr td:first-child')].map(el => el.innerText);
+
+const ECO = Array(500).fill(0).map((_,i)=> ({
+  name: names[i],
+  code: codes[i],
+  moves: moves[i].split(' ').filter(m=> (m != 1*m) && (m!== ','))
+});
+
+function download(content, fileName, contentType) {
+    var a = document.createElement("a");
+    var file = new Blob([content], {type: contentType});
+    a.href = URL.createObjectURL(file);
+    a.download = fileName;
+    a.click();
+}
+
+download('export default '+JSON.stringify(ECO)+';', 'eco.js', 'text/plain');
+```
+
+which will download the file, which we can import into our project on the command line (from the project root)
+
+`$ mv ~/Downloads/eco.js src/eco.js`
+
+these moves are in SAN, which is great for people to read, but as we saw earlier, having a disambiguated notation is easier to work with from javascript
+
+
+so let's write a utility to convert the moves into our notation (using chess js)
+
+
+<sub>./src/chess-util.js</sub>
+```js
+import eco from './eco';
+
+//...
+
+const
+```
+
+
 
 
 
