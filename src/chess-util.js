@@ -162,3 +162,69 @@ export const isGameOver = ({ pieces, turn, moves })=> {
   
   return (new Chess(FEN)).game_over();
 };
+
+export const castleAsKingMove = move => (
+  move === 'O-O' ? 'Ke1g1' :
+  move === 'O-O-O' ? 'Ke1c1' :
+  move === 'o-o' ? 'ke8g8' :
+  move === 'o-o-o' ? 'ke8c8' :
+  move
+);
+
+export const isMoveLegal = ({ pieces, moves, turn }, moveFrom, moveTo)=>{
+  const { rank, file } = moveTo;
+  
+  const legalMoves = calculateLegalMoves(pieces, turn, moves);
+
+  const promoting = moveFrom.piece.match(/p/i) && (!rank || rank === 7);
+  const enPassant = !pieces[rank][file] &&
+                    moveFrom.piece.match(/p/i) &&
+                    moveFrom.file !== file;
+  
+  let move = (
+    turn === 'w' ? moveFrom.piece.toUpperCase() : moveFrom.piece
+  ) + (
+    String.fromCharCode(moveFrom.file+97) + (moveFrom.rank+1)
+  ) + (
+    (String.fromCharCode(file+97)) + (rank+1)
+  ) + (pieces[rank][file] || enPassant ? 'x' : '') + (promoting ? 'q' : '');
+
+  if( move === 'ke8g8' ) move = 'o-o';
+  if( move === 'ke8c8' ) move = 'o-o-o';
+  if( move === 'Ke1g1' ) move = 'O-O';
+  if( move === 'Ke1c1' ) move = 'O-O-O';
+  
+  return {
+    move: legalMoves.includes(move) ? move : false,
+    enPassant,
+    promoting,
+  };
+};
+
+export const calculateBoardAfterMove = ({ pieces, moves, turn }, moveFrom, moveTo, enPassant, move)=>{
+  const { rank, file } = moveTo;  
+
+  const nextPieces = JSON.parse(JSON.stringify(pieces));
+
+  nextPieces[rank][file] = moveFrom.piece;
+  nextPieces[moveFrom.rank][moveFrom.file] = '';
+  if( move.includes('-') ){
+    if( file === 6 ){
+      nextPieces[rank][5] = nextPieces[rank][7];
+      nextPieces[rank][7] = '';
+    } else if( file === 2 ) {
+      nextPieces[rank][3] = nextPieces[rank][0];
+      nextPieces[rank][0] = '';
+    }
+  }
+  if( enPassant ) nextPieces[rank === 2 ? 3 : 4][file] = '';
+
+  const nextTurn = turn === 'w' ? 'b' : 'w';
+  const nextMoves = [...moves, move];
+
+  return {
+    pieces: nextPieces,
+    turn: nextTurn,
+    moves: nextMoves,
+  };
+};

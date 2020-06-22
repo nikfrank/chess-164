@@ -2,7 +2,12 @@ import React, { useState, useCallback, useEffect } from 'react';
 import Board from './Board';
 import PlayerCard from './PlayerCard';
 
-import { initPieces, calculateLegalMoves } from './chess-util';
+import {
+  initPieces,
+  calculateLegalMoves,
+  isMoveLegal,
+  calculateBoardAfterMove,
+} from './chess-util';
 import Piece from 'react-chess-pieces';
 
 import { db, syncMove } from './network';
@@ -68,56 +73,29 @@ const Game = ({ remoteGame, user })=>{
   }, [remoteGame, user]);
 
   const onMove = useCallback(({ rank, file }, moveFrom=selected)=>{
-    const legalMoves = calculateLegalMoves(pieces, turn, moves);
-
-    const promoting = moveFrom.piece.match(/p/i) && (!rank || rank === 7);
-    const enPassant = !pieces[rank][file] &&
-                      moveFrom.piece.match(/p/i) &&
-                      moveFrom.file !== file;
-    
-    let move = (
-      turn === 'w' ? moveFrom.piece.toUpperCase() : moveFrom.piece
-    ) + (
-      String.fromCharCode(moveFrom.file+97) + (moveFrom.rank+1)
-    ) + (
-      (String.fromCharCode(file+97)) + (rank+1)
-    ) + (pieces[rank][file] || enPassant ? 'x' : '') + (promoting ? 'q' : '');
-
-    if( move === 'ke8g8' ) move = 'o-o';
-    if( move === 'ke8c8' ) move = 'o-o-o';
-    if( move === 'Ke1g1' ) move = 'O-O';
-    if( move === 'Ke1c1' ) move = 'O-O-O';
-    
-    if( !legalMoves.includes(move) ) return;
-    setLegalMovesDisplay({});
-
-    const nextPieces = JSON.parse(JSON.stringify(pieces));
-
-    nextPieces[rank][file] = moveFrom.piece;
-    nextPieces[moveFrom.rank][moveFrom.file] = '';
-    if( move.includes('-') ){
-      if( file === 6 ){
-        nextPieces[rank][5] = nextPieces[rank][7];
-        nextPieces[rank][7] = '';
-      } else if( file === 2 ) {
-        nextPieces[rank][3] = nextPieces[rank][0];
-        nextPieces[rank][0] = '';
-      }
-    }
-    if( enPassant ) nextPieces[rank === 2 ? 3 : 4][file] = '';
+    const { move, enPassant, promoting } = isMoveLegal(
+      { pieces, moves, turn },
+      moveFrom,
+      { rank, file },
+    );
 
     setSelected({});
+    setLegalMovesDisplay({});
+    if( !move ) return;
 
+    const next = calculateBoardAfterMove({
+      pieces, moves, turn,
+    }, moveFrom, { rank, file }, enPassant, move);
+    
     if(!promoting){
-      setPieces(nextPieces);
-      setTurn(turn === 'w' ? 'b' : 'w');
-      setMoves([...moves, move]);
+      setPieces(next.pieces);
+      setTurn(next.turn);
+      setMoves(next.moves);
       
     } else {
       setPromotion({ rank, file, move });
-      setPiecesLocal(nextPieces);
-    }
-    
+      setPiecesLocal(next.pieces);
+    }    
   }, [selected, moves, pieces, turn, setMoves, setPieces, setTurn]);
 
 

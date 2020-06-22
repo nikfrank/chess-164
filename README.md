@@ -1733,6 +1733,18 @@ now we should call this function when the user selects a piece or starts draggin
   );
 ```
 
+and we should clear the display when a drag goes nowhere
+
+```jsx
+    //... in onMove, after calculating legal moves and current move
+
+    setSelected({}); // move from lower
+    setLegalMovesDisplay({});
+    if( !legalMoves.includes(move) ) return;
+
+```
+
+
 now, inside the `Board`, we'll have to render these markers
 
 <sub>./src/Board.js</sub>
@@ -2557,6 +2569,7 @@ one for "My Games" and one for "Open Challenges"
   .tabs-headers {
     width: 100%;
     display: flex;
+    flex-wrap: wrap;
     justify-content: space-around;
     margin-top: 10px;
     
@@ -2991,8 +3004,6 @@ import { db, syncMove } from './network';
 
     if( enPassant ) nextPieces[rank === 2 ? 3 : 4][file] = '';
 
-    setSelected({});
-
     if(!promoting){
       setPieces(nextPieces);
       setTurn(turn === 'w' ? 'b' : 'w');
@@ -3285,8 +3296,9 @@ export default PlayerCard;
 
 
 - clock, clock security
-- routing, + Openings view
 - deep link public access any game (allow read on game always)
+
+
 
 
 ## Openings Trainer
@@ -3296,54 +3308,385 @@ Our users want to improve their chess game - and most of them don't know a Sicil
 Let's build a view which let's them practice and explore openings.
 
 
-`$ touch src/Openings.js src/Openings.scss`
+first we'll add client side routing
+
+`$ yarn add react-router react-router-dom`
+
 
 <sub>./src/App.js</sub>
 ```jsx
-// routing
+//...
+import {
+  Route,
+  BrowserRouter as Router,
+  Switch,
+  Redirect
+} from 'react-router-dom';
+
+import Openings from './Openings';
+
+//...
+
+const GameView = ({ user })=> {
+  const [game, setGame] = useState(null);
+
+  return (
+    <>
+    <SideNav user={user} onSelectGame={setGame}/>
+    <Game remoteGame={game} user={user}/>
+    </>
+  );
+};
+
+
+function App() {
+  const [user, setUser] = useState(null);
+
+  useEffect(()=>{
+    auth().onAuthStateChanged((newUser) => {
+      if (!newUser) return;
+      setUser(newUser);
+    })
+  }, []);
+    
+  return (
+    <Router>
+      <DndProvider backend={HTML5Backend}>
+        <div className='App'>
+          <Switch>
+            <Route exact path='/game' render={props=> <GameView {...props} user={user}/>} />
+            <Route exact path='/openings' render={props=> <Openings {...props} user={user}/>} />
+            <Redirect from='/' to='/game' />
+          </Switch>
+        </div>
+      </DndProvider>
+    </Router>
+  );
+}
+
+//...
 ```
+
+
+now we can scaffold the files for the new view
+
+`$ touch src/Openings.js src/Openings.scss`
+
+
+and copy the basic interaction bindings for a `Board` from `Game`
+
 
 <sub>./src/Openings.js</sub>
 ```jsx
-//...
+import React, { useState, useCallback } from 'react';
+import './Openings.scss';
+
+import Board from './Board';
+import { initPieces, calculateLegalMoves } from './chess-util';
+
+function Openings(){
+  const [flipped, setFlipped] = useState(false);
+  const [pieces, setPieces] = useState(initPieces);
+  const [turn, setTurn] = useState('w');
+  const [moves, setMoves] = useState([]);
+  const [selected, setSelected] = useState({});
+  const [legalMovesDisplay, setLegalMovesDisplay] = useState({});
+  
+  const onMove = ({ rank, file }, moveFrom=selected)=>{
+    // if move is correct, make the move then trigger computer
+    // otherwise, don't do anything
+    // there are no promotions here (yet?)
+  };
+
+  const showLegalMoves = useCallback(({ rank, file, piece })=>{
+    const prefix = piece + String.fromCharCode(file+97) + (rank+1);
+
+    setLegalMovesDisplay(
+      calculateLegalMoves(pieces, turn, moves)
+        .map(move => (
+          move === 'O-O' ? 'Ke1g1' :
+          move === 'O-O-O' ? 'Ke1c1' :
+          move === 'o-o' ? 'ke8g8' :
+          move === 'o-o-o' ? 'ke8c8' :
+          move
+        )).filter(move => move.indexOf(prefix) === 0)
+        .map(move => move.slice(3) )
+        .reduce((moves, move)=> ({
+          ...moves, [move.slice(0,2)]: move.includes('x') ? 'x' : '.',
+        }), {})
+    );
+  }, [pieces, turn, moves]);
+
+  
+  const onSelect = useCallback(({ rank, file, piece })=>{
+    if(!selected.piece) {
+      setSelected({ rank, file, piece });
+      showLegalMoves({ rank, file, piece })
+      
+    } else if( rank === selected.rank && file === selected.file ) {
+      setSelected({});
+      setLegalMovesDisplay({});
+      
+    } else onMove({ rank, file });
+  }, [selected, onMove, showLegalMoves]);
+
+  const onClick = ({ rank, file })=> {
+    if( selected.piece ) onMove({ rank, file });
+  };
+
+  const onDragEnd = (start, end)=> {
+    if( start.rank === end.rank && start.file === end.file )
+      onSelect({ ...start, piece: start.type });
+    else
+      onMove(end, { ...start, piece: start.type });
+  };
+  
+  const onDragStart = showLegalMoves;
+
+  
+  return (
+    <div className='Openings'>
+      <Board
+          flipped={flipped}
+          pieces={pieces}
+          markers={legalMovesDisplay}
+          onSelect={onSelect}
+          selected={selected}
+          onDragStart={onDragStart}
+          onDragEnd={onDragEnd}
+          onClick={onClick}
+      />
+    </div>
+  );
+}
+
+export default Openings;
 ```
 
 <sub>./src/Openings.scss</sub>
 ```scss
-//...
+.Openings {
+  .Board {
+    margin: 10vh auto;
+  }
+}
 ```
 
-first let's render a `Board`
-
-<sub>./src/Openings.js</sub>
-```jsx
-//...
-```
-
-and make the pieces movable
-
-```jsx
-//...
-```
 
 now we'll want to refactor some of our movement logic from `Game` into the util so we can reuse it here
 
-<sub>./src/Game.js</sub>
-```diff
-
-```
 
 <sub>./src/chess-util.js</sub>
 ```js
+//...
+
+export const castleAsKingMove = move => (
+  move === 'O-O' ? 'Ke1g1' :
+  move === 'O-O-O' ? 'Ke1c1' :
+  move === 'o-o' ? 'ke8g8' :
+  move === 'o-o-o' ? 'ke8c8' :
+  move
+);
+```
+
+<sub>./src/Game.js</sub>
+<sub>./src/Openings.js</sub>
+```diff
+//...
+
+import {
+  //...
++  castleAsKingMove,
+} from './chess-util';
+
+  //...
+
+    setLegalMovesDisplay(
+      calculateLegalMoves(pieces, turn, moves)
+-        .map(move => (
+-          move === 'O-O' ? 'Ke1g1' :
+-          move === 'O-O-O' ? 'Ke1c1' :
+-          move === 'o-o' ? 'ke8g8' :
+-          move === 'o-o-o' ? 'ke8c8' :
+-          move
+-        )).filter(move => move.indexOf(prefix) === 0)
++        .map(castleAsKingMove)
++        .filter(move => move.indexOf(prefix) === 0)
+        .map(move => move.slice(3) )
+        .reduce((moves, move)=> ({
+          ...moves, [move.slice(0,2)]: move.includes('x') ? 'x' : '.',
+        }), {})
+    );
+
+  //...
 
 ```
+
+we'll move the legal move checking to the util
+
+<sub>./src/chess-util.js</sub>
+```js
+//...
+
+export const isMoveLegal = ({ pieces, moves, turn }, moveFrom, moveTo)=>{
+  const { rank, file } = moveTo;
+  
+  const legalMoves = calculateLegalMoves(pieces, turn, moves);
+
+  const promoting = moveFrom.piece.match(/p/i) && (!rank || rank === 7);
+  const enPassant = !pieces[rank][file] &&
+                    moveFrom.piece.match(/p/i) &&
+                    moveFrom.file !== file;
+  
+  let move = (
+    turn === 'w' ? moveFrom.piece.toUpperCase() : moveFrom.piece
+  ) + (
+    String.fromCharCode(moveFrom.file+97) + (moveFrom.rank+1)
+  ) + (
+    (String.fromCharCode(file+97)) + (rank+1)
+  ) + (pieces[rank][file] || enPassant ? 'x' : '') + (promoting ? 'q' : '');
+
+  if( move === 'ke8g8' ) move = 'o-o';
+  if( move === 'ke8c8' ) move = 'o-o-o';
+  if( move === 'Ke1g1' ) move = 'O-O';
+  if( move === 'Ke1c1' ) move = 'O-O-O';
+  
+  return {
+    move: legalMoves.includes(move) ? move : false,
+    enPassant,
+    promoting,
+  };
+};
+```
+
+<sub>./src/Game.js</sub>
+```js
+//...
+
+import {
+  //...
+  isMoveLegal,
+} from './chess-util';
+
+  //...
+
+
+  const onMove = useCallback(({ rank, file }, moveFrom=selected)=>{
+    const { move, enPassant, promoting } = isMoveLegal(
+      { pieces, moves, turn },
+      moveFrom,
+      { rank, file },
+    );
+
+    setSelected({});
+    setLegalMovesDisplay({});
+    if( !move ) return;
+
+    //...
+```
+
+and the calculation of future board positions
+
+
+<sub>./src/chess-util.js</sub>
+```js
+//...
+
+export const calculateBoardAfterMove = ({ pieces, moves, turn }, moveFrom, moveTo, enPassant, move)=>{
+  const { rank, file } = moveTo;  
+
+  const nextPieces = JSON.parse(JSON.stringify(pieces));
+
+  nextPieces[rank][file] = moveFrom.piece;
+  nextPieces[moveFrom.rank][moveFrom.file] = '';
+  if( move.includes('-') ){
+    if( file === 6 ){
+      nextPieces[rank][5] = nextPieces[rank][7];
+      nextPieces[rank][7] = '';
+    } else if( file === 2 ) {
+      nextPieces[rank][3] = nextPieces[rank][0];
+      nextPieces[rank][0] = '';
+    }
+  }
+  if( enPassant ) nextPieces[rank === 2 ? 3 : 4][file] = '';
+
+  const nextTurn = turn === 'w' ? 'b' : 'w';
+  const nextMoves = [...moves, move];
+
+  return {
+    pieces: nextPieces,
+    turn: nextTurn,
+    moves: nextMoves,
+  };
+};
+```
+
+
+<sub>./src/Game.js</sub>
+```jsx
+import {
+  //...
+  calculateBoardAfterMove,
+} from './chess-util';
+
+    //...
+    if( !move ) return;
+
+    const next = calculateBoardAfterMove({
+      pieces, moves, turn,
+    }, moveFrom, { rank, file }, enPassant, move);
+    
+      if(!promoting){
+      setPieces(next.pieces);
+      setTurn(next.turn);
+      setMoves(next.moves);
+      
+    } else {
+      setPromotion({ rank, file, move });
+      setPiecesLocal(next.pieces);
+    }
+
+  //...
+```
+
+now that we've done that refactor, we can write a simple `onMove` in `Openings`
 
 <sub>./src/Openings.js</sub>
 ```jsx
+  //...
 
+  const onMove = useCallback(({ rank, file }, moveFrom=selected)=>{
+    const { move, enPassant, promoting } = isMoveLegal(
+      { pieces, moves, turn },
+      moveFrom,
+      { rank, file },
+    );
+
+    setSelected({});
+    setLegalMovesDisplay({});
+    if( !move ) return;
+
+    const next = calculateBoardAfterMove({
+      pieces, moves, turn,
+    }, moveFrom, { rank, file }, enPassant, move);
+    
+    if(!promoting){
+      setPieces(next.pieces);
+      setTurn(next.turn);
+      setMoves(next.moves);
+    } else console.log('how are you promoting in the opening?');
+
+  }, [selected, moves, pieces, turn, setMoves, setPieces, setTurn]);
 ```
 
-we won't bother to show the legal moves here, but we will want to show the user a list of moves (in `san`)
+
+now we just need to add a list of openings, which we'll be able to use to display book moves to the user, or test the vastness of their knowledge
+
+
+### ECO
+
+
+
 
 let's make a component to display the analysis notation
 
@@ -3371,14 +3714,6 @@ and an undo / redo button
 
 ```
 
-Now we'll want to show the user which opening they are playing
-
-we'll need a list of openings (ECO)
-
-<sub>./src/chess-util.js</sub>
-```js
-
-```
 
 so we can find the opening they are playing and display that back to them
 
