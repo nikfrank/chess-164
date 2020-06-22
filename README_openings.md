@@ -430,7 +430,21 @@ import eco from './eco';
 
 const convertSAN = (moves)=> {
   const game = new Chess();
-  //...
+  
+  moves.forEach(move => game.move(move));
+  
+  const verboaseMoves = game.history({ verbose: true });
+  
+  return verboseMoves.map(cjsMove=> (
+    cjsMove.flags === 'q' ? cjsMove.color === 'w' ? 'O-O-O' : 'o-o-o' :
+    cjsMove.flags === 'k' ? cjsMove.color === 'w' ? 'O-O' : 'o-o' :
+     
+    (cjsMove.color === 'w' ? cjsMove.piece.toUpperCase() : cjsMove.piece) +
+    cjsMove.from + cjsMove.to +
+    (cjsMove.flags.includes('c') ? 'x' : '') +
+    (cjsMove.flags.includes('e') ? 'x' : '') +
+    (cjsMove.promotion || '')
+  ));
 };
 ```
 
