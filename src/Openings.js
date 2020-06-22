@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import './Openings.scss';
 
 import Board from './Board';
@@ -8,6 +8,7 @@ import {
   castleAsKingMove,
   isMoveLegal,
   calculateBoardAfterMove,
+  filterOpeningsByMoves,
 } from './chess-util';
 
 function Openings(){
@@ -17,6 +18,12 @@ function Openings(){
   const [moves, setMoves] = useState([]);
   const [selected, setSelected] = useState({});
   const [legalMovesDisplay, setLegalMovesDisplay] = useState({});
+
+  const [currentOpening, setCurrentOpening] = useState(null);
+
+  useEffect(()=> {
+    setCurrentOpening( filterOpeningsByMoves(moves)[0] );
+  }, [moves]);
   
   const onMove = useCallback(({ rank, file }, moveFrom=selected)=>{
     const { move, enPassant, promoting } = isMoveLegal(
@@ -92,6 +99,7 @@ function Openings(){
           onDragEnd={onDragEnd}
           onClick={onClick}
       />
+      {currentOpening?.name}
     </div>
   );
 }

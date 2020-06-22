@@ -165,7 +165,7 @@ export default Openings;
 ```scss
 .Openings {
   .Board {
-    margin: 10vh auto;
+    margin: 10vh auto 0;
   }
 }
 ```
@@ -500,13 +500,69 @@ after which, we should delete the code which runs this automatically on boot
 great, now we can use these openings easily to compare with the moves we have in our `Openings` component
 
 
+### Displaying current opening
+
+while the user is playing moves, we can filter the list of openings and display the name if there is a match
+
+
+<sub>./src/Openings.js</sub>
+```jsx
+import React, { useState, useCallback, useEffect } from 'react';
+//...
+
+import {
+  //...
+  filterOpeningsByMoves,
+} from './chess-util';
+
+
+  //...
+  
+  const [currentOpening, setCurrentOpening] = useState(null);
+
+  useEffect(()=> {
+    setCurrentOpening( filterOpeningsByMoves(moves)[0] );
+  }, [moves]);
+
+  //...
+  
+        {currentOpening?.name}
+
+```
+
+<sub>./src/chess-util.js</sub>
+```js
+//...
+
+export const filterOpeningsByMoves = (moves)=>{
+  if( !moves.length ) return [eco[0]];
+
+  let rem = [...eco], prev;
+  let i = 0;
+  
+  while((i < moves.length) && (rem.length)){
+    prev = [...rem];
+    rem = prev.filter(opening=> opening.moves[i] === moves[i]);
+    i++;
+  }
+  return rem.length ? rem : prev;
+};
+
+```
+
+great - we have a first feature for openings trainer.
+
+now we'll add more features to explore mode (undo / redo / displaying book moves) before moving on to practice mode.
+
+
+
 ### Displaying book moves (explore mode)
 
 
 
 
 
-
+### undo / redo / display moves history
 
 
 let's make a component to display the analysis notation
@@ -536,13 +592,9 @@ and an undo / redo button
 ```
 
 
-so we can find the opening they are playing and display that back to them
 
 
-<sub>./src/Openings.js</sub>
-```jsx
 
-```
 
 ### practice and explore
 

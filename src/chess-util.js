@@ -250,3 +250,17 @@ const convertSAN = (moves)=> {
      (cjsMove.promotion || '')
   ));
 };
+
+export const filterOpeningsByMoves = (moves)=>{
+  if( !moves.length ) return [eco[0]];
+
+  let rem = [...eco], prev;
+  let i = 0;
+  
+  while((i < moves.length) && (rem.length)){
+    prev = [...rem];
+    rem = prev.filter(opening=> opening.moves[i] === moves[i]);
+    i++;
+  }
+  return rem.length ? rem : prev;
+};
