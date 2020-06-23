@@ -140,21 +140,9 @@ export const calculateFEN = (pieces, turn, moves)=> {
 };
 
 export const calculateLegalMoves = (pieces, turn, moves, moveFrom)=> {
-
   const FEN = calculateFEN(pieces, turn, moves);
-  
   const allMoves = new Chess(FEN).moves({ verbose: true });
-
-  return allMoves.map(cjsMove=> (
-    cjsMove.flags === 'q' ? cjsMove.color === 'w' ? 'O-O-O' : 'o-o-o' :
-    cjsMove.flags === 'k' ? cjsMove.color === 'w' ? 'O-O' : 'o-o' :
-     
-    (cjsMove.color === 'w' ? cjsMove.piece.toUpperCase() : cjsMove.piece) +
-    cjsMove.from + cjsMove.to +
-    (cjsMove.flags.includes('c') ? 'x' : '') +
-    (cjsMove.flags.includes('e') ? 'x' : '') +
-    (cjsMove.promotion || '')
-  ));
+  return allMoves.map(convertCJSmove);
 };
 
 export const isGameOver = ({ pieces, turn, moves })=> {
@@ -232,23 +220,43 @@ export const calculateBoardAfterMove = ({ pieces, moves, turn }, moveFrom, moveT
 };
 
 
+export const calculateBoardBeforeMoves = ({ pieces, moves, turn }, n)=>{
+  const prevTurn = n%2 ? turn === 'w' ? 'b' : 'w' : turn;
+  const prevMoves = moves.slice(0, -n);
+
+  let prevPieces = JSON.parse(JSON.stringify(pieces));
+
+  // move piece backwards P-to-from
+  // if it was promotion, replace with p/P
+  // if it was capture, replace captured piece
+  //// check prev move for en passant replacements +/- 1
+};
+
+const convertCJSmove = cjsMove=> (
+  cjsMove.flags === 'q' ? cjsMove.color === 'w' ? 'O-O-O' : 'o-o-o' :
+  cjsMove.flags === 'k' ? cjsMove.color === 'w' ? 'O-O' : 'o-o' :
+  
+  (cjsMove.color === 'w' ? cjsMove.piece.toUpperCase() : cjsMove.piece) +
+  cjsMove.from + cjsMove.to +
+       (cjsMove.flags.includes('c') ? ('x'+(
+         cjsMove.color === 'w' ?
+         cjsMove.captured : cjsMove.captured.toUpperCase()
+       )) : '') +
+        (cjsMove.flags.includes('e') ? ('x' + (
+          cjsMove.color === 'w' ? 'p' : 'P'
+        )): '') +
+        (cjsMove.color === 'w' ?
+         (cjsMove.promotion || '').toUpperCase():
+         (cjsMove.promotion || '')
+        )
+);
+
 const convertSAN = (moves)=> {
   const game = new Chess();
-  
   moves.forEach(move => game.move(move));
   
   const verboseMoves = game.history({ verbose: true });
-  
-  return verboseMoves.map(cjsMove=> (
-    cjsMove.flags === 'q' ? cjsMove.color === 'w' ? 'O-O-O' : 'o-o-o' :
-    cjsMove.flags === 'k' ? cjsMove.color === 'w' ? 'O-O' : 'o-o' :
-    
-    (cjsMove.color === 'w' ? cjsMove.piece.toUpperCase() : cjsMove.piece) +
-    cjsMove.from + cjsMove.to +
-     (cjsMove.flags.includes('c') ? 'x' : '') +
-     (cjsMove.flags.includes('e') ? 'x' : '') +
-     (cjsMove.promotion || '')
-  ));
+  return verboseMoves.map(convertCJSmove);
 };
 
 export const filterOpeningsByMoves = (moves)=>{

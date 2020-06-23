@@ -725,10 +725,65 @@ that's a good start, now we'll handle clicks on previous moves and reset the `pi
 
 ### undo
 
+in order to undo efficiently, we'll need to add one more feature to our notation - the piece captured
+
+it is sufficiently unambiguous to simply append the character of the piece captured in proper case
+
+<sub>./src/chess-util.js</sub>
+```js
+cjsMove=> (
+  cjsMove.flags === 'q' ? cjsMove.color === 'w' ? 'O-O-O' : 'o-o-o' :
+  cjsMove.flags === 'k' ? cjsMove.color === 'w' ? 'O-O' : 'o-o' :
+  
+  (cjsMove.color === 'w' ? cjsMove.piece.toUpperCase() : cjsMove.piece) +
+  cjsMove.from + cjsMove.to +
+       (cjsMove.flags.includes('c') ? ('x'+(
+         cjsMove.color === 'w' ?
+         cjsMove.captured : cjsMove.captured.toUpperCase()
+       )) : '') +
+        (cjsMove.flags.includes('e') ? ('x' + (
+          cjsMove.color === 'w' ? 'p' : 'P'
+        )): '') +
+        (cjsMove.color === 'w' ?
+         (cjsMove.promotion || '').toUpperCase():
+         (cjsMove.promotion || '')
+        )
+);
+```
+
+now when a user undoes some number of moves, they can be computed in reverse, whereas before we may have had to recalculate the entire game.
+
+
+now we can code a `calculatePiecesBeforeMoves` function to move backwards in games
+
+<sub>./src/chess-util.js</sub>
+```js
+//...
+
+export const calculateBoardBeforeMoves = ({ pieces, moves, turn }, n)=>{
+  const prevTurn = n%2 ? turn === 'w' ? 'b' : 'w' : turn;
+  const prevMoves = moves.slice(0, -n);
+
+  let prevPieces = JSON.parse(JSON.stringify(pieces));
+
+  // move piece backwards P-to-from
+  // if it was promotion, replace with p/P
+  // if it was capture, replace captured piece
+  //// check prev move for en passant replacements +/- 1
+};
+```
+
+
+
+
 <sub>./src/AnalysisNotation.js</sub>
 ```jsx
 
 ```
+
+
+
+### making every opening available from the create game menu
 
 
 

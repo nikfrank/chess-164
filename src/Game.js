@@ -7,6 +7,7 @@ import {
   calculateLegalMoves,
   isMoveLegal,
   calculateBoardAfterMove,
+  castleAsKingMove,
 } from './chess-util';
 import Piece from 'react-chess-pieces';
 
@@ -120,13 +121,8 @@ const Game = ({ remoteGame, user })=>{
 
     setLegalMovesDisplay(
       calculateLegalMoves(pieces, turn, moves)
-        .map(move => (
-          move === 'O-O' ? 'Ke1g1' :
-          move === 'O-O-O' ? 'Ke1c1' :
-          move === 'o-o' ? 'ke8g8' :
-          move === 'o-o-o' ? 'ke8c8' :
-          move
-        )).filter(move => move.indexOf(prefix) === 0)
+        .map(castleAsKingMove)
+        .filter(move => move.indexOf(prefix) === 0)
         .map(move => move.slice(3) )
         .reduce((moves, move)=> ({
           ...moves, [move.slice(0,2)]: move.includes('x') ? 'x' : '.',
