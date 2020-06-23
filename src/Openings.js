@@ -2,6 +2,8 @@ import React, { useState, useCallback, useEffect } from 'react';
 import './Openings.scss';
 
 import Board from './Board';
+import AnalysisNotation from './AnalysisNotation';
+
 import {
   initPieces,
   calculateLegalMoves,
@@ -112,6 +114,7 @@ function Openings(){
           onClick={onClick}
       />
       {currentOpenings[0]?.name}
+      <AnalysisNotation moves={moves}/>
     </div>
   );
 }

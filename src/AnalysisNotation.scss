@@ -1,0 +1,29 @@
+.AnalysisNotation {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  top: 85vh;
+  
+  .moves-container {
+    display: flex;
+    flex-direction: column;
+    flex-wrap: wrap;
+    height: 100%;
+    align-content: flex-start;
+    
+    .move {
+      height: calc( 50% - 12px );
+      padding: 5px;
+      min-width: 65px;
+      border: 1px solid black;
+
+      &:nth-child(even) {
+        background-color: black;
+        color: white;
+        border: 1px solid white;
+        border-top: 1px solid black;
+      }
+    }
+  }
+}

@@ -635,28 +635,97 @@ If we only had an undo button, the user would really be able to learn
 ### undo / redo / display moves history
 
 
-let's make a component to display the analysis notation
+let's make a component to display the moves in analysis notation
 
 `$ touch src/AnalysisNotation.js src/AnalysisNotation.scss`
 
 <sub>./src/AnalysisNotation.js</sub>
 ```jsx
+import React from 'react';
+import './AnalysisNotation.scss';
+
+function AnalysisNotation({ moves }){
+
+  return (
+    <div className='AnalysisNotation'>
+      <div className='moves-container'>
+        {moves.map((move, i) => (
+           <div className='move' key={i}>
+             {move}
+           </div>
+         ))}
+      </div>
+    </div>
+  );
+}
+
+export default AnalysisNotation;
 
 ```
 
 <sub>./src/AnalysisNotation.scss</sub>
 ```scss
+.AnalysisNotation {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  top: 85vh;
+  
+  .moves-container {
+    display: flex;
+    flex-direction: column;
+    flex-wrap: wrap;
+    height: 100%;
+    align-content: flex-start;
+    
+    .move {
+      height: calc( 50% - 12px );
+      padding: 5px;
+      min-width: 65px;
+      border: 1px solid black;
 
+      &:nth-child(even) {
+        background-color: black;
+        color: white;
+        border: 1px solid white;
+        border-top: 1px solid black;
+      }
+    }
+  }
+}
+```
+
+<sub>./src/Openings.scss</sub>
+```scss
+.Openings {
+  .Board {
+    margin: 7vh auto 0;
+    height: 60vh;
+    width: 60vh;
+  }
+}
 ```
 
 <sub>./src/Openings.js</sub>
 ```jsx
+//...
 
+import AnalysisNotation from './AnalysisNotation';
+
+  //...
+  
+        <AnalysisNotation moves={moves}/>
 ```
 
-and an undo / redo button
 
-<sub>./src/Openings.js</sub>
+that's a good start, now we'll handle clicks on previous moves and reset the `pieces` to the previous position
+
+
+
+### undo
+
+<sub>./src/AnalysisNotation.js</sub>
 ```jsx
 
 ```
